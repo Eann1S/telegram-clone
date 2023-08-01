@@ -1,0 +1,113 @@
+services:
+  authentication-service:
+    container_name: authentication-service
+    image: eann1s/authentication-service:latest
+    hostname: authentication-service
+    restart: unless-stopped
+    pull_policy: missing
+    ports:
+      - 8089:8089
+    environment:
+      SERVER_PORT: 8089
+      DATABASE_URL: authentication-service-database:5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_URL: kafka:29092
+      DISCOVERY_SERVER_URL: discovery-server:8761
+      CONFIG_SERVER_URL: config-server:8888
+    depends_on:
+      - authentication-service-database
+      - discovery-server
+      - redis
+      - kafka
+
+  authentication-service-database:
+    container_name: authentication-service-database
+    image: postgres:alpine3.17
+    hostname: authentication-service-database
+    restart: unless-stopped
+    pull_policy: missing
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: authentication-service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      PGDATA: /data/postgres
+    volumes:
+      - authentication-service-data:/data/postgres
+
+  api-gateway:
+    container_name: api-gateway
+    image: eann1s/telegram-api-gateway:latest
+    hostname: api-gateway
+    restart: unless-stopped
+    pull_policy: missing
+    ports:
+      - 8080:8080
+    environment:
+      DISCOVERY_SERVER_URL: discovery-server:8761
+      CONFIG_SERVER_URL: config-server:8888
+    depends_on:
+      - discovery-server
+
+  config-server:
+    container_name: config-server
+    image: eann1s/cloud-config-server:latest
+    hostname: config-server
+    restart: unless-stopped
+    pull_policy: missing
+    ports:
+      - 8888:8888
+
+  discovery-server:
+    container_name: discovery-server
+    image: eann1s/discovery-server:latest
+    hostname: discovery-server
+    restart: unless-stopped
+    pull_policy: missing
+    ports:
+      - 8761:8761
+    depends_on:
+      - config-server
+
+  redis:
+    container_name: redis
+    image: redis:7.2-rc-alpine3.18
+    hostname: redis
+    restart: unless-stopped
+    pull_policy: missing
+    ports:
+      - 6379:6379
+
+  zookeeper:
+    container_name: zookeeper
+    image: confluentinc/cp-zookeeper:7.3.2
+    hostname: zookeeper
+    ports:
+      - 2181:2181
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    container_name: kafka
+    image: confluentinc/cp-kafka:7.3.2
+    hostname: kafka
+    ports:
+      - 9092:9092
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_BROKER_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    depends_on:
+      - zookeeper
+
+volumes:
+  authentication-service-data: {}
