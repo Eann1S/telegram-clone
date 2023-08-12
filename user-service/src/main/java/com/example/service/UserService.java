@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -19,11 +18,10 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private final MessageGenerator messageGenerator;
 
     public Collection<UserDto> getAllUsers() {
         Collection<User> users = userRepository.findAll();
-        return mapUsersToDtos(users);
+        return userMapper.mapUsersToDtos(users);
     }
 
     public UserDto getUserById(String id) {
@@ -33,6 +31,11 @@ public class UserService {
 
     public UserDto getUserByEmail(String email) {
         User user = findUserByEmailInDatabase(email);
+        return userMapper.mapUserToDto(user);
+    }
+
+    public UserDto getUserByPhoneNumber(String phoneNumber) {
+        User user = findUserByPhoneNumberInDatabase(phoneNumber);
         return userMapper.mapUserToDto(user);
     }
 
@@ -52,16 +55,18 @@ public class UserService {
         return getUserFromOptionalOtherwiseThrowExceptionWithParameter(optionalUser, email);
     }
 
-    User getUserFromOptionalOtherwiseThrowExceptionWithParameter(Optional<User> optionalUser, Object param) {
-        return optionalUser
-                .orElseThrow(() -> new EntityNotFoundException(
-                        messageGenerator.generateMessage("error.entity.not_found", param))
-                );
+    User findUserByPhoneNumberInDatabase(String phoneNumber) {
+        Optional<User> optionalUser = userRepository.findByPhoneNumber(phoneNumber);
+        return getUserFromOptionalOtherwiseThrowExceptionWithParameter(optionalUser, phoneNumber);
     }
 
-    Collection<UserDto> mapUsersToDtos(Collection<User> users) {
-        return users.stream()
-                .map(userMapper::mapUserToDto)
-                .collect(Collectors.toList());
+    void createUserFromDto(UserDto userDto) {
+        User user = userMapper.mapDtoToUser(userDto);
+        userRepository.save(user);
+    }
+
+    private User getUserFromOptionalOtherwiseThrowExceptionWithParameter(Optional<User> optionalUser, Object parameter) {
+        return optionalUser.orElseThrow(() ->
+                new EntityNotFoundException(MessageGenerator.generateEntityNotFoundMessage(parameter)));
     }
 }

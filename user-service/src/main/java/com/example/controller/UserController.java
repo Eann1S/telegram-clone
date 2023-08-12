@@ -26,9 +26,14 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
-    @GetMapping(value = "/user")
+    @GetMapping(value = "/user", params = "email")
     public ResponseEntity<UserDto> getUserByEmail(@RequestParam String email) {
         return ResponseEntity.ok(userService.getUserByEmail(email));
+    }
+
+    @GetMapping(value = "/user", params = "phoneNumber")
+    public ResponseEntity<UserDto> getUserByPhoneNumber(@RequestParam String phoneNumber) {
+        return ResponseEntity.ok(userService.getUserByPhoneNumber(phoneNumber));
     }
 
     @PutMapping("/user/{id}")

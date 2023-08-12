@@ -1,4 +1,4 @@
-package com.example.constant;
+package constant;
 
 import lombok.experimental.UtilityClass;
 

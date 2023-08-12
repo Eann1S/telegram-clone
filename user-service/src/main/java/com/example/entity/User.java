@@ -5,9 +5,6 @@ import lombok.*;
 import org.springframework.data.neo4j.core.schema.GeneratedValue;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
-import org.springframework.data.neo4j.core.schema.Relationship;
-
-import java.util.Set;
 
 @Node
 @Getter
@@ -27,7 +24,4 @@ public class User {
     private String email;
     @Setter
     private String phoneNumber;
-    @ToString.Exclude
-    @Relationship(type = "IN_FRIENDSHIP")
-    private Set<User> friends;
 }

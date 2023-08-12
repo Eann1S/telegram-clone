@@ -5,7 +5,7 @@ spring:
   application:
     name: user-service
   neo4j:
-    uri: ${DATABASE_URL:localhost:7687}
+    uri: ${DATABASE_URL}
     authentication:
       username: ${DATABASE_USERNAME}
       password: ${DATABASE_PASSWORD}
@@ -21,6 +21,8 @@ spring:
     retry:
       topic:
         enabled: true
+    listener:
+      concurrency: 10
 
 logging:
   level:
@@ -36,10 +38,5 @@ eureka:
 
 kafka:
   topics:
-    authentication-service:
-      consumer: authentication-service-consumer-topic
-      producer: authentication-service-producer-topic
-
-services:
-  authentication-service:
-    name: authentication-service
+    user-registration: user-registration-topic
+    user-update: user-update-topic

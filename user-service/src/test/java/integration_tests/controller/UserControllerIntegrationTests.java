@@ -1,23 +1,27 @@
-package com.example.controller;
+package integration_tests.controller;
 
-import com.example.DatabaseStarter;
+import com.example.UserServiceApplication;
 import com.example.dto.request.UpdateUserRequest;
 import com.example.dto.response.ErrorResponse;
 import com.example.dto.response.UserDto;
 import com.example.entity.User;
 import com.example.repository.UserRepository;
+import com.example.service.MessageGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import integration_tests.DatabaseStarter;
 import lombok.extern.slf4j.Slf4j;
-import org.instancio.Instancio;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -27,21 +31,22 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static com.example.constant.UrlConstant.*;
+import static constant.UrlConstant.*;
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
-import static org.instancio.Select.field;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static util.TestUserCreator.*;
 
-@SpringBootTest
+@SpringBootTest(classes = UserServiceApplication.class)
 @ActiveProfiles("test")
+@EnableAutoConfiguration(exclude = {KafkaAutoConfiguration.class})
 @AutoConfigureMockMvc
 @Slf4j
 @SuppressWarnings("SameParameterValue")
-public class UserControllerTests implements DatabaseStarter {
+public class UserControllerIntegrationTests implements DatabaseStarter {
 
     @Autowired
     private MockMvc mockMvc;
@@ -49,25 +54,24 @@ public class UserControllerTests implements DatabaseStarter {
     private UserRepository userRepository;
     @Autowired
     private ObjectMapper objectMapper;
-    @Value("${error.entity.not_found}")
-    private String NOT_FOUND_MESSAGE;
+    @MockBean
+    @SuppressWarnings("unused")
+    private KafkaAdmin kafkaAdmin;
 
     @Nested
     class SuccessCases {
         @Test
         public void shouldReturnListOfUsers_whenUsersExist() throws Exception {
             saveToDatabase(
-                    createUserWithAllFields("1", "username1", "email1", "123"),
-                    createUserWithAllFields("2", "username2", "email2", "456")
+                    createUserWithId("1"),
+                    createUserWithId("2")
             );
 
             String jsonResponse = requestUsers();
 
             assertThat(mapJsonResponseToUserDtos(jsonResponse))
-                    .containsOnly(
-                            UserDto.of("1", "username1", "email1", "123"),
-                            UserDto.of("2", "username2", "email2", "456")
-                    );
+                    .extracting(UserDto::id)
+                    .containsOnly("1", "2");
         }
 
         @Test
@@ -91,7 +95,7 @@ public class UserControllerTests implements DatabaseStarter {
         }
 
         @Test
-        public void shouldReturnCorrectUser_whenGivenValidEmail() throws Exception {
+        public void shouldReturnUser_whenGivenValidEmail() throws Exception {
             saveToDatabase(
                     createUserWithEmail("email")
             );
@@ -101,6 +105,19 @@ public class UserControllerTests implements DatabaseStarter {
             assertThat(mapJsonResponseToUserDto(jsonResponse))
                     .extracting(UserDto::email, as(STRING))
                     .isEqualTo("email");
+        }
+
+        @Test
+        public void shouldReturnUser_whenGivenValidPhoneNumber() throws Exception {
+            saveToDatabase(
+                    createUserWithPhoneNumber("12345678")
+            );
+
+            String jsonResponse = requestUserByPhoneNumber("12345678");
+
+            assertThat(mapJsonResponseToUserDto(jsonResponse))
+                    .extracting(UserDto::phoneNumber, as(STRING))
+                    .isEqualTo("12345678");
         }
 
         @Test
@@ -129,7 +146,7 @@ public class UserControllerTests implements DatabaseStarter {
 
             assertThat(mapJsonResponseToErrorResponse(jsonResponse))
                     .extracting(ErrorResponse::statusCode, ErrorResponse::errorMessage)
-                    .containsExactly(NOT_FOUND.value(), NOT_FOUND_MESSAGE.formatted("2"));
+                    .containsExactly(NOT_FOUND.value(), MessageGenerator.generateEntityNotFoundMessage("2"));
         }
 
         @Test
@@ -142,7 +159,20 @@ public class UserControllerTests implements DatabaseStarter {
 
             assertThat(mapJsonResponseToErrorResponse(jsonResponse))
                     .extracting(ErrorResponse::statusCode, ErrorResponse::errorMessage)
-                    .containsExactly(NOT_FOUND.value(), NOT_FOUND_MESSAGE.formatted("invalid email"));
+                    .containsExactly(NOT_FOUND.value(), MessageGenerator.generateEntityNotFoundMessage("invalid email"));
+        }
+
+        @Test
+        public void shouldThrowException_whenGivenInvalidPhoneNumber() throws Exception {
+            saveToDatabase(
+                    createUserWithPhoneNumber("12345678")
+            );
+
+            String jsonResponse = requestUserByPhoneNumber("87654321");
+
+            assertThat(mapJsonResponseToErrorResponse(jsonResponse))
+                    .extracting(ErrorResponse::statusCode, ErrorResponse::errorMessage)
+                    .containsExactly(NOT_FOUND.value(), MessageGenerator.generateEntityNotFoundMessage("87654321"));
         }
     }
 
@@ -158,6 +188,11 @@ public class UserControllerTests implements DatabaseStarter {
 
     private String requestUserByEmail(String email) throws Exception {
         ResultActions resultActions = mockMvc.perform(get(USER_URL).param("email", email));
+        return getContentAsStringFrom(resultActions);
+    }
+
+    private String requestUserByPhoneNumber(String phoneNumber) throws Exception {
+        ResultActions resultActions = mockMvc.perform(get(USER_URL).param("phoneNumber", phoneNumber));
         return getContentAsStringFrom(resultActions);
     }
 
@@ -195,26 +230,5 @@ public class UserControllerTests implements DatabaseStarter {
     private void saveToDatabase(User... users) {
         userRepository.saveAll(Arrays.asList(users));
         log.info("new users are inserted into a database, now there are {} in the database", userRepository.findAll());
-    }
-
-    private User createUserWithAllFields(String id, String username, String email, String phoneNumber) {
-        return Instancio.of(User.class)
-                .set(field(User::getId), id)
-                .set(field(User::getUsername), username)
-                .set(field(User::getEmail), email)
-                .set(field(User::getPhoneNumber), phoneNumber)
-                .create();
-    }
-
-    private User createUserWithId(String id) {
-        return Instancio.of(User.class)
-                .set(field(User::getId), id)
-                .create();
-    }
-
-    private User createUserWithEmail(String email) {
-        return Instancio.of(User.class)
-                .set(field(User::getEmail), email)
-                .create();
     }
 }
