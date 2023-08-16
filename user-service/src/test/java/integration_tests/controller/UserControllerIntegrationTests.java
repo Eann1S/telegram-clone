@@ -10,18 +10,18 @@ import com.example.service.MessageGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import integration_tests.DatabaseStarter;
+import integration_tests.annotation.DisableKafkaAutoConfiguration;
+import integration_tests.starter.DatabaseStarter;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.kafka.core.KafkaAdmin;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -42,7 +42,8 @@ import static util.TestUserCreator.*;
 
 @SpringBootTest(classes = UserServiceApplication.class)
 @ActiveProfiles("test")
-@EnableAutoConfiguration(exclude = {KafkaAutoConfiguration.class})
+@MockBean({KafkaTemplate.class, KafkaAdmin.class})
+@DisableKafkaAutoConfiguration
 @AutoConfigureMockMvc
 @Slf4j
 @SuppressWarnings("SameParameterValue")
@@ -54,14 +55,11 @@ public class UserControllerIntegrationTests implements DatabaseStarter {
     private UserRepository userRepository;
     @Autowired
     private ObjectMapper objectMapper;
-    @MockBean
-    @SuppressWarnings("unused")
-    private KafkaAdmin kafkaAdmin;
 
     @Nested
     class SuccessCases {
         @Test
-        public void shouldReturnListOfUsers_whenUsersExist() throws Exception {
+        void shouldReturnListOfUsers_whenUsersExist() throws Exception {
             saveToDatabase(
                     createUserWithId("1"),
                     createUserWithId("2")
@@ -75,14 +73,14 @@ public class UserControllerIntegrationTests implements DatabaseStarter {
         }
 
         @Test
-        public void shouldReturnEmptyListOfUsers_whenUsersDontExist() throws Exception {
+        void shouldReturnEmptyListOfUsers_whenUsersDontExist() throws Exception {
             String jsonResponse = requestUsers();
 
             assertThat(mapJsonResponseToUserDtos(jsonResponse)).isEmpty();
         }
 
         @Test
-        public void shouldReturnUser_whenGivenValidId() throws Exception {
+        void shouldReturnUser_whenGivenValidId() throws Exception {
             saveToDatabase(
                     createUserWithId("1")
             );
@@ -95,7 +93,7 @@ public class UserControllerIntegrationTests implements DatabaseStarter {
         }
 
         @Test
-        public void shouldReturnUser_whenGivenValidEmail() throws Exception {
+        void shouldReturnUser_whenGivenValidEmail() throws Exception {
             saveToDatabase(
                     createUserWithEmail("email")
             );
@@ -108,7 +106,7 @@ public class UserControllerIntegrationTests implements DatabaseStarter {
         }
 
         @Test
-        public void shouldReturnUser_whenGivenValidPhoneNumber() throws Exception {
+        void shouldReturnUser_whenGivenValidPhoneNumber() throws Exception {
             saveToDatabase(
                     createUserWithPhoneNumber("12345678")
             );
@@ -121,7 +119,7 @@ public class UserControllerIntegrationTests implements DatabaseStarter {
         }
 
         @Test
-        public void shouldUpdateUser_whenGivenValidId() throws Exception {
+        void shouldUpdateUser_whenGivenValidId() throws Exception {
             saveToDatabase(
                     createUserWithAllFields("1", "username", "email", "12345")
             );
@@ -137,7 +135,7 @@ public class UserControllerIntegrationTests implements DatabaseStarter {
     @Nested
     class FailureCases {
         @Test
-        public void shouldThrowException_whenGivenInvalidId() throws Exception {
+        void shouldThrowException_whenGivenInvalidId() throws Exception {
             saveToDatabase(
                     createUserWithId("1")
             );
@@ -150,7 +148,7 @@ public class UserControllerIntegrationTests implements DatabaseStarter {
         }
 
         @Test
-        public void shouldThrowException_whenGivenInvalidEmail() throws Exception {
+        void shouldThrowException_whenGivenInvalidEmail() throws Exception {
             saveToDatabase(
                     createUserWithEmail("email")
             );
@@ -163,7 +161,7 @@ public class UserControllerIntegrationTests implements DatabaseStarter {
         }
 
         @Test
-        public void shouldThrowException_whenGivenInvalidPhoneNumber() throws Exception {
+        void shouldThrowException_whenGivenInvalidPhoneNumber() throws Exception {
             saveToDatabase(
                     createUserWithPhoneNumber("12345678")
             );

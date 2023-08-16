@@ -8,23 +8,26 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import static com.example.json.JsonMapper.toJson;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class KafkaConsumerServiceTests {
+class KafkaProducerServiceTests {
 
     @Mock
-    private UserService userService;
+    private KafkaTemplate<String, String> kafkaTemplate;
     @InjectMocks
-    private KafkaConsumerService kafkaConsumerService;
+    private KafkaProducerService kafkaProducerService;
 
     @ParameterizedTest
     @MethodSource("util.TestParameterFactories#userDtoFactory")
-    void shouldCreateUserFromRegistrationMessage(UserDto userDto) {
-        kafkaConsumerService.createUserFromRegistrationMessage(toJson(KafkaMessage.of(userDto)));
+    void shouldSendUserUpdateMessage(UserDto userDto) {
+        kafkaProducerService.sendUserUpdateMessage(userDto);
 
-        verify(userService).createUserFrom(userDto);
+        verify(kafkaTemplate).send(any(), eq(toJson(KafkaMessage.of(userDto))));
     }
 }

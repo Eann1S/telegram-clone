@@ -18,6 +18,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final KafkaProducerService kafkaProducerService;
 
     public Collection<UserDto> getAllUsers() {
         Collection<User> users = userRepository.findAll();
@@ -42,7 +43,9 @@ public class UserService {
     public UserDto updateUserByIdFromUpdateRequest(String id, UpdateUserRequest updateUserRequest) {
         User userToUpdate = findUserByIdInDatabase(id);
         User updatedUser = userMapper.updateUserFromUpdateRequest(userToUpdate, updateUserRequest);
-        return userMapper.mapUserToDto(updatedUser);
+        UserDto userDto = userMapper.mapUserToDto(updatedUser);
+        kafkaProducerService.sendUserUpdateMessage(userDto);
+        return userDto;
     }
 
     User findUserByIdInDatabase(String id) {
@@ -60,7 +63,7 @@ public class UserService {
         return getUserFromOptionalOtherwiseThrowExceptionWithParameter(optionalUser, phoneNumber);
     }
 
-    void createUserFromDto(UserDto userDto) {
+    void createUserFrom(UserDto userDto) {
         User user = userMapper.mapDtoToUser(userDto);
         userRepository.save(user);
     }

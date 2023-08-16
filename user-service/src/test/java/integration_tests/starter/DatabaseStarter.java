@@ -1,4 +1,4 @@
-package integration_tests;
+package integration_tests.starter;
 
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
