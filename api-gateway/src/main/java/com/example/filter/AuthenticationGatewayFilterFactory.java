@@ -8,17 +8,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuthenticationGatewayFilterFactory extends AbstractGatewayFilterFactory<AuthenticationGatewayFilterFactory.Config> {
 
-    private final AuthenticationGatewayFilter authenticationServiceClient;
+    private final AuthenticationGatewayFilter authenticationGatewayFilter;
 
     @Autowired
-    public AuthenticationGatewayFilterFactory(AuthenticationGatewayFilter authenticationServiceClient) {
+    public AuthenticationGatewayFilterFactory(AuthenticationGatewayFilter authenticationGatewayFilter) {
         super(Config.class);
-        this.authenticationServiceClient = authenticationServiceClient;
+        this.authenticationGatewayFilter = authenticationGatewayFilter;
     }
 
     @Override
     public GatewayFilter apply(Config config) {
-        return authenticationServiceClient;
+        return authenticationGatewayFilter;
     }
 
     static class Config {

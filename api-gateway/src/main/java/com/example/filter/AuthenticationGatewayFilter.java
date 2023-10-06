@@ -1,8 +1,7 @@
 package com.example.filter;
 
 import com.example.client.AuthenticationServiceClient;
-import com.example.exception.EmptyAuthorizationHeaderException;
-import com.example.service.MessageGenerator;
+import com.example.exception.MissingAuthorizationHeaderException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -15,39 +14,53 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
-import java.util.Optional;
 
-import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 
 @Component
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 @Slf4j
 public class AuthenticationGatewayFilter implements GatewayFilter {
+
     private final AuthenticationServiceClient authenticationServiceClient;
-    private final MessageGenerator messageGenerator;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        return authenticationServiceClient.getUserEmail(extractJwtFromHeader(
-                        getAuthorizationHeaderFromRequest(exchange.getRequest()).orElseThrow(() -> {
-                            throw new EmptyAuthorizationHeaderException(UNAUTHORIZED, messageGenerator.generateMessage("error.unauthorized"));
-                        })
-                ))
-                .flatMap(userEmail -> {
-                    exchange.getRequest()
-                            .mutate()
-                            .headers(headers -> headers.add("User-Email", userEmail))
-                            .build();
+        String jwt = getJwtFromRequest(exchange.getRequest());
+        return authenticationServiceClient.getIdOfAuthorizedAccount(jwt)
+                .flatMap(userId -> {
+                    addUserIdHeaderToExchange(exchange, userId);
                     return chain.filter(exchange);
                 });
     }
 
-    private Optional<String> getAuthorizationHeaderFromRequest(ServerHttpRequest request) {
-        Map<String, String> headers = request.getHeaders().toSingleValueMap();
-        return Optional.ofNullable(headers.get(HttpHeaders.AUTHORIZATION));
+    private void addUserIdHeaderToExchange(ServerWebExchange exchange, String userId) {
+        exchange.getRequest()
+                .mutate()
+                .headers(headers -> headers.add("User-Id", userId))
+                .build();
     }
 
-    private String extractJwtFromHeader(String header) {
+    private String getJwtFromRequest(ServerHttpRequest request) {
+        String authorizationHeader = getAuthorizationHeaderFromRequest(request);
+        return getJwtFromHeader(authorizationHeader);
+    }
+
+    private String getAuthorizationHeaderFromRequest(ServerHttpRequest request) {
+        Map<String, String> headers = getHeadersOfRequest(request);
+        String authorizationHeader = headers.get(AUTHORIZATION);
+        if (authorizationHeader == null) {
+            throw new MissingAuthorizationHeaderException();
+        }
+        return authorizationHeader;
+    }
+
+    private Map<String, String> getHeadersOfRequest(ServerHttpRequest request) {
+        HttpHeaders headers = request.getHeaders();
+        return headers.toSingleValueMap();
+    }
+
+    private String getJwtFromHeader(String header) {
         return header.split(" ")[1].trim();
     }
 }
