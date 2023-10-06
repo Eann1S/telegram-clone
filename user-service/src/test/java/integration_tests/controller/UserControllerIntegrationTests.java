@@ -2,231 +2,187 @@ package integration_tests.controller;
 
 import com.example.UserServiceApplication;
 import com.example.dto.request.UpdateUserRequest;
-import com.example.dto.response.ErrorResponse;
 import com.example.dto.response.UserDto;
 import com.example.entity.User;
 import com.example.repository.UserRepository;
-import com.example.service.MessageGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import integration_tests.annotation.DisableKafkaAutoConfiguration;
-import integration_tests.starter.DatabaseStarter;
-import lombok.extern.slf4j.Slf4j;
+import com.example.service.UserService;
+import com.google.gson.reflect.TypeToken;
+import org.instancio.junit.InstancioExtension;
+import org.instancio.junit.InstancioSource;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.MessageSource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.kafka.core.KafkaAdmin;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import test_util.starter.AllServicesStarter;
 
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Locale;
 
-import static constant.UrlConstant.*;
-import static org.assertj.core.api.Assertions.as;
+import static com.example.json.JsonConverter.fromJson;
+import static com.example.json.JsonConverter.toJson;
+import static com.example.message.ErrorMessage.ENTITY_NOT_FOUND;
+import static com.example.message.InfoMessage.USER_UPDATED;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static util.TestUserCreator.*;
+import static test_util.TestControllerUtil.getResponseContentWithExpectedStatus;
+import static test_util.constant.UrlConstant.*;
 
 @SpringBootTest(classes = UserServiceApplication.class)
 @ActiveProfiles("test")
-@MockBean({KafkaTemplate.class, KafkaAdmin.class})
-@DisableKafkaAutoConfiguration
 @AutoConfigureMockMvc
-@Slf4j
-@SuppressWarnings("SameParameterValue")
-public class UserControllerIntegrationTests implements DatabaseStarter {
+@ExtendWith(InstancioExtension.class)
+public class UserControllerIntegrationTests implements AllServicesStarter {
 
     @Autowired
     private MockMvc mockMvc;
     @Autowired
     private UserRepository userRepository;
     @Autowired
-    private ObjectMapper objectMapper;
+    private UserService userService;
+    @Autowired
+    private MessageSource messageSource;
 
     @Nested
     class SuccessCases {
-        @Test
-        void shouldReturnListOfUsers_whenUsersExist() throws Exception {
-            saveToDatabase(
-                    createUserWithId("1"),
-                    createUserWithId("2")
-            );
 
-            String jsonResponse = requestUsers();
+        @ParameterizedTest
+        @InstancioSource
+        void shouldReturnListOfUsers_whenUsersExist(User user1, User user2) throws Exception {
+            saveToDatabase(user1, user2);
 
-            assertThat(mapJsonResponseToUserDtos(jsonResponse))
+            String jsonResponse = requestUsersAndExpectStatus(OK);
+
+            Collection<UserDto> actualUsers = fromJson(jsonResponse, getTypeTokenForListWithUserDtos());
+            assertThat(actualUsers)
                     .extracting(UserDto::id)
-                    .containsOnly("1", "2");
+                    .containsOnly(user1.getId(), user2.getId());
         }
 
-        @Test
+        @ParameterizedTest
+        @InstancioSource
         void shouldReturnEmptyListOfUsers_whenUsersDontExist() throws Exception {
-            String jsonResponse = requestUsers();
+            String jsonResponse = requestUsersAndExpectStatus(OK);
 
-            assertThat(mapJsonResponseToUserDtos(jsonResponse)).isEmpty();
+            Collection<UserDto> actualUsers = fromJson(jsonResponse, getTypeTokenForListWithUserDtos());
+            assertThat(actualUsers).isEmpty();
         }
 
-        @Test
-        void shouldReturnUser_whenGivenValidId() throws Exception {
-            saveToDatabase(
-                    createUserWithId("1")
-            );
+        @ParameterizedTest
+        @InstancioSource
+        void shouldReturnUser_whenGivenValidId(User user) throws Exception {
+            saveToDatabase(user);
 
-            String jsonResponse = requestUserById("1");
+            String jsonResponse = requestUserByIdAndExpectStatus(user.getId(), OK);
 
-            assertThat(mapJsonResponseToUserDto(jsonResponse))
-                    .extracting(UserDto::id, as(STRING))
-                    .isEqualTo("1");
+            UserDto actualUser = fromJson(jsonResponse, UserDto.class);
+            assertThat(actualUser.id()).isEqualTo(user.getId());
         }
 
-        @Test
-        void shouldReturnUser_whenGivenValidEmail() throws Exception {
-            saveToDatabase(
-                    createUserWithEmail("email")
-            );
+        @ParameterizedTest
+        @InstancioSource
+        void shouldReturnUser_whenGivenValidEmail(User user) throws Exception {
+            saveToDatabase(user);
 
-            String jsonResponse = requestUserByEmail("email");
+            String jsonResponse = requestUserByEmailAndExpectStatus(user.getEmail(), OK);
 
-            assertThat(mapJsonResponseToUserDto(jsonResponse))
-                    .extracting(UserDto::email, as(STRING))
-                    .isEqualTo("email");
+            UserDto actualUser = fromJson(jsonResponse, UserDto.class);
+            assertThat(actualUser.email()).isEqualTo(user.getEmail());
         }
 
-        @Test
-        void shouldReturnUser_whenGivenValidPhoneNumber() throws Exception {
-            saveToDatabase(
-                    createUserWithPhoneNumber("12345678")
-            );
+        @ParameterizedTest
+        @InstancioSource
+        void shouldUpdateUser_whenGivenValidId(User user) throws Exception {
+            saveToDatabase(user);
+            UpdateUserRequest request = UpdateUserRequest.of("email@email.com", "username");
 
-            String jsonResponse = requestUserByPhoneNumber("12345678");
+            String jsonResponse = updateUserByIdAndExpectStatus(user.getId(), request, OK);
 
-            assertThat(mapJsonResponseToUserDto(jsonResponse))
-                    .extracting(UserDto::phoneNumber, as(STRING))
-                    .isEqualTo("12345678");
-        }
-
-        @Test
-        void shouldUpdateUser_whenGivenValidId() throws Exception {
-            saveToDatabase(
-                    createUserWithAllFields("1", "username", "email", "12345")
-            );
-
-            UpdateUserRequest updateUserRequest = UpdateUserRequest.of("new username", "new email", "67890");
-            String jsonResponse = updateUserById("1", updateUserRequest);
-
-            assertThat(mapJsonResponseToUserDto(jsonResponse))
-                    .isEqualTo(UserDto.of("1", "new username", "new email", "67890"));
+            assertThat(jsonResponse).contains(USER_UPDATED.getMessage());
+            UserDto updatedUser = userService.getUserById(user.getId());
+            assertThat(updatedUser)
+                    .extracting(UserDto::id, UserDto::email, UserDto::username)
+                    .containsExactly(user.getId(), request.email(), request.username());
         }
     }
 
     @Nested
     class FailureCases {
-        @Test
-        void shouldThrowException_whenGivenInvalidId() throws Exception {
-            saveToDatabase(
-                    createUserWithId("1")
-            );
+        @ParameterizedTest
+        @InstancioSource
+        void shouldThrowException_whenGivenInvalidId(User user, Long invalidId) throws Exception {
+            saveToDatabase(user);
 
-            String jsonResponse = requestUserById("2");
+            String jsonResponse = requestUserByIdAndExpectStatus(invalidId, NOT_FOUND);
 
-            assertThat(mapJsonResponseToErrorResponse(jsonResponse))
-                    .extracting(ErrorResponse::statusCode, ErrorResponse::errorMessage)
-                    .containsExactly(NOT_FOUND.value(), MessageGenerator.generateEntityNotFoundMessage("2"));
+            String errorMessage = ENTITY_NOT_FOUND.formatWith(invalidId);
+            assertThat(jsonResponse).contains(errorMessage);
         }
 
-        @Test
-        void shouldThrowException_whenGivenInvalidEmail() throws Exception {
-            saveToDatabase(
-                    createUserWithEmail("email")
-            );
+        @ParameterizedTest
+        @InstancioSource
+        void shouldThrowException_whenGivenInvalidEmail(User user, String invalidEmail) throws Exception {
+            saveToDatabase(user);
 
-            String jsonResponse = requestUserByEmail("invalid email");
+            String jsonResponse = requestUserByEmailAndExpectStatus(invalidEmail, NOT_FOUND);
 
-            assertThat(mapJsonResponseToErrorResponse(jsonResponse))
-                    .extracting(ErrorResponse::statusCode, ErrorResponse::errorMessage)
-                    .containsExactly(NOT_FOUND.value(), MessageGenerator.generateEntityNotFoundMessage("invalid email"));
+            String errorMessage = ENTITY_NOT_FOUND.formatWith(invalidEmail);
+            assertThat(jsonResponse).contains(errorMessage);
         }
 
-        @Test
-        void shouldThrowException_whenGivenInvalidPhoneNumber() throws Exception {
-            saveToDatabase(
-                    createUserWithPhoneNumber("12345678")
-            );
+        @ParameterizedTest
+        @InstancioSource
+        void shouldNotUpdateUser_whenGivenInvalidEmail(User user, UpdateUserRequest request) throws Exception {
+            saveToDatabase(user);
 
-            String jsonResponse = requestUserByPhoneNumber("87654321");
+            String jsonResponse = updateUserByIdAndExpectStatus(user.getId(), request, BAD_REQUEST);
 
-            assertThat(mapJsonResponseToErrorResponse(jsonResponse))
-                    .extracting(ErrorResponse::statusCode, ErrorResponse::errorMessage)
-                    .containsExactly(NOT_FOUND.value(), MessageGenerator.generateEntityNotFoundMessage("87654321"));
+            String errorMessage = getErrorMessageByCode("email.valid");
+            assertThat(jsonResponse).contains(errorMessage);
         }
     }
 
-    private String requestUsers() throws Exception {
+    private String requestUsersAndExpectStatus(HttpStatus status) throws Exception {
         ResultActions resultActions = mockMvc.perform(get(USERS_URL));
-        return getContentAsStringFrom(resultActions);
+        return getResponseContentWithExpectedStatus(resultActions, status);
     }
 
-    private String requestUserById(String id) throws Exception {
+    private String requestUserByIdAndExpectStatus(Long id, HttpStatus status) throws Exception {
         ResultActions resultActions = mockMvc.perform(get(USER_URL_WITH_VARIABLE, id));
-        return getContentAsStringFrom(resultActions);
+        return getResponseContentWithExpectedStatus(resultActions, status);
     }
 
-    private String requestUserByEmail(String email) throws Exception {
-        ResultActions resultActions = mockMvc.perform(get(USER_URL).param("email", email));
-        return getContentAsStringFrom(resultActions);
+    private String requestUserByEmailAndExpectStatus(String email, HttpStatus status) throws Exception {
+        ResultActions resultActions = mockMvc.perform(get(USER_URL)
+                .param("email", email));
+        return getResponseContentWithExpectedStatus(resultActions, status);
     }
 
-    private String requestUserByPhoneNumber(String phoneNumber) throws Exception {
-        ResultActions resultActions = mockMvc.perform(get(USER_URL).param("phoneNumber", phoneNumber));
-        return getContentAsStringFrom(resultActions);
+    private String updateUserByIdAndExpectStatus(Long id, UpdateUserRequest updateUserRequest, HttpStatus status) throws Exception {
+        ResultActions resultActions = mockMvc.perform(put(UPDATE_USER_URL, id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(updateUserRequest)));
+        return getResponseContentWithExpectedStatus(resultActions, status);
     }
-
-    private String updateUserById(String id, UpdateUserRequest updateUserRequest) throws Exception {
-        ResultActions resultActions = mockMvc.perform(
-                put(USER_URL_WITH_VARIABLE, id)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateUserRequest))
-        );
-        return getContentAsStringFrom(resultActions);
-    }
-
-    private String getContentAsStringFrom(ResultActions resultActions) throws UnsupportedEncodingException {
-        return resultActions.andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-    }
-
-    private ErrorResponse mapJsonResponseToErrorResponse(String jsonResponse) throws JsonProcessingException {
-        return objectMapper.readValue(jsonResponse, ErrorResponse.class);
-    }
-
-    private UserDto mapJsonResponseToUserDto(String jsonResponse) throws JsonProcessingException {
-        return objectMapper.readValue(jsonResponse, UserDto.class);
-    }
-
-    private Collection<UserDto> mapJsonResponseToUserDtos(String jsonResponse) throws JsonProcessingException {
-        return objectMapper.readValue(jsonResponse, getTypeReferenceForListOfUserDtos());
-    }
-
-    @SuppressWarnings("Convert2Diamond")
-    private TypeReference<Collection<UserDto>> getTypeReferenceForListOfUserDtos() {
-        return new TypeReference<Collection<UserDto>>() {
-        };
+    private TypeToken<Collection<UserDto>> getTypeTokenForListWithUserDtos() {
+        return new TypeToken<>() {};
     }
 
     private void saveToDatabase(User... users) {
         userRepository.saveAll(Arrays.asList(users));
-        log.info("new users are inserted into a database, now there are {} in the database", userRepository.findAll());
+    }
+
+    private String getErrorMessageByCode(String code, Object... args) {
+        return messageSource.getMessage(code, args, Locale.getDefault());
     }
 }

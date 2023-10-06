@@ -12,4 +12,8 @@ public enum ErrorMessage {
     ErrorMessage(String message) {
         this.message = message;
     }
+
+    public String formatWith(Object property) {
+        return message.formatted(property);
+    }
 }

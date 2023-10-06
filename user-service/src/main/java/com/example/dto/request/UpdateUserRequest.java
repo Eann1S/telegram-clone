@@ -1,19 +1,14 @@
 package com.example.dto.request;
 
-import lombok.Builder;
+import jakarta.validation.constraints.Email;
 
-@Builder
 public record UpdateUserRequest(
-        String username,
+        @Email(message = "{email.valid}")
         String email,
-        String phoneNumber
+        String username
 ) {
 
-    public static UpdateUserRequest of(String username, String email, String phoneNumber) {
-        return UpdateUserRequest.builder()
-                .username(username)
-                .email(email)
-                .phoneNumber(phoneNumber)
-                .build();
+    public static UpdateUserRequest of(String email, String username) {
+        return new UpdateUserRequest(email, username);
     }
 }

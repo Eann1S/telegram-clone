@@ -1,13 +1,17 @@
 package com.example.controller;
 
 import com.example.dto.request.UpdateUserRequest;
+import com.example.dto.response.MessageDto;
 import com.example.dto.response.UserDto;
 import com.example.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
+
+import static com.example.message.InfoMessage.USER_UPDATED;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,7 +26,7 @@ public class UserController {
     }
 
     @GetMapping("/user/{id}")
-    public ResponseEntity<UserDto> getUserById(@PathVariable String id) {
+    public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
@@ -31,13 +35,13 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserByEmail(email));
     }
 
-    @GetMapping(value = "/user", params = "phoneNumber")
-    public ResponseEntity<UserDto> getUserByPhoneNumber(@RequestParam String phoneNumber) {
-        return ResponseEntity.ok(userService.getUserByPhoneNumber(phoneNumber));
-    }
-
-    @PutMapping("/user/{id}")
-    public ResponseEntity<UserDto> updateUserById(@PathVariable String id, @RequestBody UpdateUserRequest updateUserRequest) {
-        return ResponseEntity.ok(userService.updateUserByIdFromUpdateRequest(id, updateUserRequest));
+    @PutMapping("/user/{id}/update")
+    public ResponseEntity<MessageDto> updateUserById(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateUserRequest updateUserRequest
+    ) {
+        userService.updateUserByIdFromUpdateRequest(id, updateUserRequest);
+        return ResponseEntity.ok(
+                MessageDto.of(USER_UPDATED));
     }
 }

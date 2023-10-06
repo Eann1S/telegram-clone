@@ -1,5 +1,7 @@
 package com.example.mapper;
 
+import com.example.dto.mq_dto.RegistrationDto;
+import com.example.dto.mq_dto.UpdateDto;
 import com.example.dto.request.UpdateUserRequest;
 import com.example.dto.response.UserDto;
 import com.example.entity.User;
@@ -15,9 +17,11 @@ public interface UserMapper {
 
     UserDto mapUserToDto(User user);
 
-    User mapDtoToUser(UserDto userDto);
+    UpdateDto mapUserToUpdateDto(User user);
 
-    User updateUserFromUpdateRequest(@MappingTarget User userToUpdate, UpdateUserRequest updateRequest);
+    User mapRegistrationDtoToUser(RegistrationDto registrationDto);
+
+    User updateUserFieldsFromUpdateRequest(@MappingTarget User userToUpdate, UpdateUserRequest updateRequest);
 
     Collection<UserDto> mapUsersToDtos(Collection<User> users);
 }
