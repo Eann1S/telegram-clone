@@ -1,0 +1,14 @@
+services:
+  config-server:
+    container_name: config-server
+    image: eann1s/cloud-config-server:latest
+    hostname: config-server
+    restart: unless-stopped
+    pull_policy: missing
+    ports:
+      - 8888:8888
+    volumes:
+      - '/mnt/c/Users/123/config-repo:/config-repo'
+    environment:
+      - "SPRING_PROFILES_ACTIVE=native"
+      - "CONFIG_LOCATION=file:///config-repo/{application}"

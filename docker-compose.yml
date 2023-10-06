@@ -16,6 +16,7 @@ services:
       DISCOVERY_SERVER_URL: discovery-server:8761
       CONFIG_SERVER_URL: config-server:8888
     depends_on:
+      - config-server
       - authentication-service-database
       - discovery-server
       - redis
@@ -36,6 +37,37 @@ services:
       PGDATA: /data/postgres
     volumes:
       - authentication-service-data:/data/postgres
+
+  user-service:
+    container_name: user-service
+    image: eann1s/telegram-user-service:latest
+    hostname: user-service
+    restart: unless-stopped
+    pull_policy: missing
+    environment:
+      DATABASE_URL: user-service-database:7687
+      KAFKA_URL: kafka:29092
+      DISCOVERY_SERVER_URL: discovery-server:8761
+      CONFIG_SERVER_URL: config-server:8888
+    depends_on:
+      - config-server
+      - user-service-database
+      - discovery-server
+      - kafka
+
+  user-service-database:
+    container_name: user-service-database
+    image: neo4j:ubi8
+    hostname: user-service-database
+    restart: unless-stopped
+    pull_policy: missing
+    ports:
+      - 7474:7474
+      - 7687:7687
+    environment:
+      NEO4J_AUTH: none
+    volumes:
+      - user-service-data:/data
 
   api-gateway:
     container_name: api-gateway
@@ -59,6 +91,8 @@ services:
     pull_policy: missing
     ports:
       - 8888:8888
+    environment:
+      - "CONFIG_LOCATION=https://github.com/Eann1S/config-repo"
 
   discovery-server:
     container_name: discovery-server
@@ -68,8 +102,6 @@ services:
     pull_policy: missing
     ports:
       - 8761:8761
-    depends_on:
-      - config-server
 
   redis:
     container_name: redis
@@ -111,3 +143,4 @@ services:
 
 volumes:
   authentication-service-data: {}
+  user-service-data: {}
