@@ -19,6 +19,7 @@
     <modules>
         <module>api-gateway</module>
         <module>user-service</module>
+        <module>message-service</module>
     </modules>
 
     <properties>
