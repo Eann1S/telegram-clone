@@ -1,0 +1,7 @@
+spring:
+  cassandra:
+    schema-action: CREATE
+
+eureka:
+  client:
+    enabled: false
