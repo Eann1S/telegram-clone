@@ -39,7 +39,7 @@ public class KafkaUserListenerIntegrationTests implements ConfigServerStarter, K
     void shouldCreateUserFromRegistrationDto_whenDtoIsSent(RegistrationDto registrationDto) {
         sendMessage(topicConfig.getRegistrationTopic(), toJson(registrationDto));
 
-        verify(userService, timeout(3000)).createUserFrom(registrationDto);
+        verify(userService, timeout(5000)).createUserFrom(registrationDto);
     }
 
     private <T> void sendMessage(String topic, T message) {

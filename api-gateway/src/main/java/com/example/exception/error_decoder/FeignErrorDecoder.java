@@ -1,10 +1,9 @@
-package com.example.exception.decoder;
+package com.example.exception.error_decoder;
 
-import com.example.dto.error.ErrorDto;
+import com.example.dto.ErrorDto;
 import feign.Response;
 import feign.codec.ErrorDecoder;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.server.ResponseStatusException;
@@ -15,8 +14,7 @@ import java.nio.charset.StandardCharsets;
 
 import static com.example.json.JsonConverter.fromJson;
 
-@Slf4j
-public class CustomFeignErrorDecoder implements ErrorDecoder {
+public class FeignErrorDecoder implements ErrorDecoder {
 
     @SneakyThrows
     @Override

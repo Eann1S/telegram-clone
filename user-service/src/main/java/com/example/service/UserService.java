@@ -1,11 +1,11 @@
 package com.example.service;
 
+import com.example.dto.UserDto;
 import com.example.dto.mq_dto.RegistrationDto;
 import com.example.dto.mq_dto.UpdateDto;
 import com.example.dto.request.UpdateUserRequest;
-import com.example.dto.response.UserDto;
 import com.example.entity.User;
-import com.example.exception.EntityNotFoundException;
+import com.example.exception.UserNotFoundException;
 import com.example.mapper.UserMapper;
 import com.example.repository.UserRepository;
 import com.example.service.messaging.UserMessagingService;
@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
-import java.util.function.Supplier;
 
 @Service
 @RequiredArgsConstructor
@@ -56,20 +55,16 @@ public class UserService {
 
     User findUserByIdInDatabase(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(supplyExceptionIfUserDoesNotExist(id));
+                .orElseThrow(() -> new UserNotFoundException(id));
     }
 
     User findUserByEmailInDatabase(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(supplyExceptionIfUserDoesNotExist(email));
+                .orElseThrow(() -> new UserNotFoundException(email));
     }
 
     private void sendUpdateDtoWithUser(User user) {
         UpdateDto updateDto = userMapper.mapUserToUpdateDto(user);
         userMessagingService.send(updateDto);
-    }
-
-    private Supplier<RuntimeException> supplyExceptionIfUserDoesNotExist(Object userProperty) {
-        return () -> new EntityNotFoundException(userProperty);
     }
 }

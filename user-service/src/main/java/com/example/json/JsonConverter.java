@@ -7,9 +7,6 @@ public class JsonConverter {
 
     private static final Gson gson = new Gson();
 
-    private JsonConverter() {
-    }
-
     public static <T> String toJson(T object) {
         return gson.toJson(object);
     }

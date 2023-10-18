@@ -1,7 +1,7 @@
 package com.example.exception.handler;
 
-import com.example.dto.response.ErrorDto;
-import com.example.exception.EntityNotFoundException;
+import com.example.dto.ErrorDto;
+import com.example.exception.UserNotFoundException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,17 +27,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorsMap, BAD_REQUEST);
     }
 
-    @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<ErrorDto> handleNotFoundException(EntityNotFoundException ex) {
-        return generateErrorResponse(ex, HttpStatus.NOT_FOUND);
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorDto> handleNotFoundException(UserNotFoundException ex) {
+        return createErrorDto(ex, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDto> handleServerException(Exception ex) {
-        return generateErrorResponse(ex, HttpStatus.INTERNAL_SERVER_ERROR);
+        return createErrorDto(ex, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    private ResponseEntity<ErrorDto> generateErrorResponse(Exception ex, HttpStatus httpStatus) {
+    private ResponseEntity<ErrorDto> createErrorDto(Exception ex, HttpStatus httpStatus) {
         ErrorDto errorDto = ErrorDto.of(ex.getMessage(), System.currentTimeMillis());
         return new ResponseEntity<>(errorDto, httpStatus);
     }

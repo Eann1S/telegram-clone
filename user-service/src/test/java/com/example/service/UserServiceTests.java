@@ -3,8 +3,9 @@ package com.example.service;
 import com.example.dto.mq_dto.RegistrationDto;
 import com.example.dto.mq_dto.UpdateDto;
 import com.example.dto.request.UpdateUserRequest;
-import com.example.dto.response.UserDto;
+import com.example.dto.UserDto;
 import com.example.entity.User;
+import com.example.exception.UserNotFoundException;
 import com.example.mapper.UserMapper;
 import com.example.repository.UserRepository;
 import com.example.service.messaging.UserMessagingService;
@@ -21,7 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-import static com.example.message.ErrorMessage.ENTITY_NOT_FOUND;
+import static com.example.message.ErrorMessage.USER_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
@@ -140,14 +141,16 @@ class UserServiceTests {
         @InstancioSource
         void shouldThrowException_whenUserWithGivenIdDoesNotExist(Long id) {
             assertThatThrownBy(() -> userService.getUserById(id))
-                    .hasMessage(ENTITY_NOT_FOUND.formatWith(id));
+                    .isInstanceOf(UserNotFoundException.class)
+                    .hasMessage(USER_NOT_FOUND.formatWith(id));
         }
 
         @ParameterizedTest
         @InstancioSource
         void shouldThrowException_whenUserWithGivenEmailDoesNotExist(String email) {
             assertThatThrownBy(() -> userService.getUserByEmail(email))
-                    .hasMessage(ENTITY_NOT_FOUND.formatWith(email));
+                    .isInstanceOf(UserNotFoundException.class)
+                    .hasMessage(USER_NOT_FOUND.formatWith(email));
         }
     }
 }

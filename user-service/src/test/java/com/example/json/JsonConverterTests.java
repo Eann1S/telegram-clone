@@ -1,6 +1,6 @@
 package com.example.json;
 
-import com.example.dto.response.UserDto;
+import com.example.dto.UserDto;
 import com.google.gson.reflect.TypeToken;
 import org.instancio.junit.InstancioExtension;
 import org.instancio.junit.InstancioSource;

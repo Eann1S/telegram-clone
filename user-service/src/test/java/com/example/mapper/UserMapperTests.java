@@ -1,15 +1,14 @@
 package com.example.mapper;
 
+import com.example.dto.UserDto;
 import com.example.dto.mq_dto.RegistrationDto;
 import com.example.dto.request.UpdateUserRequest;
-import com.example.dto.response.UserDto;
 import com.example.entity.User;
 import org.instancio.junit.InstancioExtension;
 import org.instancio.junit.InstancioSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.mapstruct.factory.Mappers;
 
 import java.util.Collection;
 import java.util.List;
@@ -23,7 +22,7 @@ class UserMapperTests {
 
     @BeforeEach
     void setUp() {
-        userMapper = Mappers.getMapper(UserMapper.class);
+        userMapper = new UserMapperImpl();
     }
 
     @ParameterizedTest

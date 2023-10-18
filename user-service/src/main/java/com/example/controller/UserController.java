@@ -1,8 +1,8 @@
 package com.example.controller;
 
 import com.example.dto.request.UpdateUserRequest;
-import com.example.dto.response.MessageDto;
-import com.example.dto.response.UserDto;
+import com.example.dto.InfoMessageDto;
+import com.example.dto.UserDto;
 import com.example.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,12 +36,12 @@ public class UserController {
     }
 
     @PutMapping("/user/{id}/update")
-    public ResponseEntity<MessageDto> updateUserById(
+    public ResponseEntity<InfoMessageDto> updateUserById(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest updateUserRequest
     ) {
         userService.updateUserByIdFromUpdateRequest(id, updateUserRequest);
         return ResponseEntity.ok(
-                MessageDto.of(USER_UPDATED));
+                InfoMessageDto.of(USER_UPDATED));
     }
 }

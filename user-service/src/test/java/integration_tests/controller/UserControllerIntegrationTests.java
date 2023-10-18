@@ -2,7 +2,7 @@ package integration_tests.controller;
 
 import com.example.UserServiceApplication;
 import com.example.dto.request.UpdateUserRequest;
-import com.example.dto.response.UserDto;
+import com.example.dto.UserDto;
 import com.example.entity.User;
 import com.example.repository.UserRepository;
 import com.example.service.UserService;
@@ -29,7 +29,7 @@ import java.util.Locale;
 
 import static com.example.json.JsonConverter.fromJson;
 import static com.example.json.JsonConverter.toJson;
-import static com.example.message.ErrorMessage.ENTITY_NOT_FOUND;
+import static com.example.message.ErrorMessage.USER_NOT_FOUND;
 import static com.example.message.InfoMessage.USER_UPDATED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpStatus.*;
@@ -125,7 +125,7 @@ public class UserControllerIntegrationTests implements AllServicesStarter {
 
             String jsonResponse = requestUserByIdAndExpectStatus(invalidId, NOT_FOUND);
 
-            String errorMessage = ENTITY_NOT_FOUND.formatWith(invalidId);
+            String errorMessage = USER_NOT_FOUND.formatWith(invalidId);
             assertThat(jsonResponse).contains(errorMessage);
         }
 
@@ -136,7 +136,7 @@ public class UserControllerIntegrationTests implements AllServicesStarter {
 
             String jsonResponse = requestUserByEmailAndExpectStatus(invalidEmail, NOT_FOUND);
 
-            String errorMessage = ENTITY_NOT_FOUND.formatWith(invalidEmail);
+            String errorMessage = USER_NOT_FOUND.formatWith(invalidEmail);
             assertThat(jsonResponse).contains(errorMessage);
         }
 

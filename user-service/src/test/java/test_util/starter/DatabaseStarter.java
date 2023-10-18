@@ -14,7 +14,7 @@ public interface DatabaseStarter {
 
     @Container
     @SuppressWarnings("resource")
-    Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:community"))
+    Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:ubi8"))
             .withoutAuthentication();
 
     @DynamicPropertySource
