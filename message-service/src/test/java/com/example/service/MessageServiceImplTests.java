@@ -1,11 +1,11 @@
 package com.example.service;
 
-import com.example.dto.MessageDto;
 import com.example.dto.request.WriteMessageRequest;
 import com.example.entity.Message;
 import com.example.exception.MessageNotFoundException;
 import com.example.mapper.MessageMapper;
 import com.example.repository.MessageRepository;
+import com.example.service.impl.MessageServiceImpl;
 import org.instancio.junit.InstancioExtension;
 import org.instancio.junit.InstancioSource;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,22 +22,21 @@ import java.util.Optional;
 import static com.example.message.ErrorMessage.MESSAGE_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, InstancioExtension.class})
-class ChatServiceTests {
+public class MessageServiceImplTests {
 
     @Mock
     private MessageRepository messageRepository;
     @Mock
     private MessageMapper messageMapper;
-    private ChatService chatService;
+    private MessageService messageService;
 
     @BeforeEach
     void setUp() {
-        chatService = new ChatService(messageRepository, messageMapper);
+        messageService = new MessageServiceImpl(messageRepository, messageMapper);
     }
 
     @Nested
@@ -45,52 +44,21 @@ class ChatServiceTests {
 
         @ParameterizedTest
         @InstancioSource
-        void shouldWriteMessage(Message message, WriteMessageRequest request, MessageDto messageDto) {
-            when(messageRepository.save(message))
-                    .then(returnsFirstArg());
-            when(messageMapper.mapWriteMessageRequestToMessage(request))
+        void shouldCreateMessageFromWriteMessageRequest(WriteMessageRequest writeMessageRequest, Message message) {
+            when(messageMapper.mapWriteMessageRequestToMessage(writeMessageRequest))
                     .thenReturn(message);
-            when(messageMapper.mapMessageToDto(message))
-                    .thenReturn(messageDto);
+            when(messageRepository.save(message))
+                    .thenReturn(message);
 
-            MessageDto actualMessageDto = chatService.writeMessage(request);
+            Message createdMessage = messageService.createMessageFromWriteMessageRequest(writeMessageRequest);
 
-            assertThat(actualMessageDto).isEqualTo(messageDto);
+            assertThat(createdMessage).isEqualTo(message);
         }
 
         @ParameterizedTest
         @InstancioSource
-        void shouldReturnChat(List<Message> messages, List<MessageDto> messageDtos, Long senderId, Long receiverId, Pageable pageable) {
-            when(messageRepository.findBySenderIdAndReceiverId(senderId, receiverId, pageable))
-                    .thenReturn(messages);
-            when(messageMapper.mapMessagesToDtos(messages))
-                    .thenReturn(messageDtos);
-
-            Iterable<MessageDto> chat = chatService.getChat(senderId, receiverId, pageable);
-
-            assertThat(chat).containsExactlyInAnyOrderElementsOf(messageDtos);
-        }
-
-        @ParameterizedTest
-        @InstancioSource
-        void shouldReturnMessageFromChat(Message message, MessageDto messageDto, Long senderId, Long receiverId, String messageId) {
-            when(messageRepository.findBySenderIdAndReceiverIdAndMessageId(senderId, receiverId, messageId))
-                    .thenReturn(Optional.of(message));
-            when(messageMapper.mapMessageToDto(message))
-                    .thenReturn(messageDto);
-
-            MessageDto messageFromChat = chatService.getMessageFromChat(senderId, receiverId, messageId);
-
-            assertThat(messageFromChat).isEqualTo(messageDto);
-        }
-
-        @ParameterizedTest
-        @InstancioSource
-        void shouldDeleteMessageFromChat(Message message, Long senderId, Long receiverId, String messageId) {
-            when(messageRepository.findBySenderIdAndReceiverIdAndMessageId(senderId, receiverId, messageId))
-                    .thenReturn(Optional.of(message));
-
-            chatService.deleteMessageFromChat(senderId, receiverId, messageId);
+        void shouldDeleteMessage(Message message) {
+            messageService.deleteMessage(message);
 
             verify(messageRepository).delete(message);
         }
@@ -101,7 +69,7 @@ class ChatServiceTests {
             when(messageRepository.findBySenderIdAndReceiverId(senderId, receiverId, pageable))
                     .thenReturn(messages);
 
-            Iterable<Message> messagesFromDb = chatService.findMessagesBySenderIdAndReceiverIdInDatabase(senderId, receiverId, pageable);
+            Iterable<Message> messagesFromDb = messageService.findMessagesBySenderIdAndReceiverIdInDatabase(senderId, receiverId, pageable);
 
             assertThat(messagesFromDb).containsExactlyInAnyOrderElementsOf(messages);
         }
@@ -112,7 +80,7 @@ class ChatServiceTests {
             when(messageRepository.findBySenderIdAndReceiverIdAndMessageId(senderId, receiverId, messageId))
                     .thenReturn(Optional.of(message));
 
-            Message messageFromDb = chatService.findMessageBySenderIdAndReceiverIdAndMessageIdInDatabase(senderId, receiverId, messageId);
+            Message messageFromDb = messageService.findMessageBySenderIdAndReceiverIdAndMessageIdInDatabase(senderId, receiverId, messageId);
 
             assertThat(messageFromDb).isEqualTo(message);
         }
@@ -127,7 +95,7 @@ class ChatServiceTests {
             when(messageRepository.findBySenderIdAndReceiverIdAndMessageId(senderId, receiverId, messageId))
                     .thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> chatService.findMessageBySenderIdAndReceiverIdAndMessageIdInDatabase(senderId, receiverId, messageId))
+            assertThatThrownBy(() -> messageService.findMessageBySenderIdAndReceiverIdAndMessageIdInDatabase(senderId, receiverId, messageId))
                     .isInstanceOf(MessageNotFoundException.class)
                     .hasMessage(MESSAGE_NOT_FOUND.formatWith(senderId, receiverId, messageId));
         }

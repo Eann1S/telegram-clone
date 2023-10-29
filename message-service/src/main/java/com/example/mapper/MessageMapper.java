@@ -1,9 +1,10 @@
 package com.example.mapper;
 
-import com.example.client.UserServiceClient;
 import com.example.dto.MessageDto;
 import com.example.dto.request.WriteMessageRequest;
 import com.example.entity.Message;
+import com.example.mapper.qualifier.user_id.UserById;
+import com.example.mapper.qualifier.user_id.UserByIdQualifier;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -13,13 +14,13 @@ import java.util.List;
 
 @Mapper(
         componentModel = MappingConstants.ComponentModel.SPRING,
-        uses = UserServiceClient.class,
+        uses = UserByIdQualifier.class,
         injectionStrategy = InjectionStrategy.CONSTRUCTOR
 )
 public interface MessageMapper {
 
-    @Mapping(target = "sender", source = "senderId")
-    @Mapping(target = "receiver", source = "receiverId")
+    @Mapping(target = "sender", source = "senderId", qualifiedBy = UserById.class)
+    @Mapping(target = "receiver", source = "receiverId", qualifiedBy = UserById.class)
     MessageDto mapMessageToDto(Message message);
 
     List<MessageDto> mapMessagesToDtos(Iterable<Message> messages);

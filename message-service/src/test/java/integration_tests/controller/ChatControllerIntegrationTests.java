@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import test_util.IntegrationTestMessageUtil;
 import test_util.starter.AllServicesStarter;
 
 import java.util.List;
@@ -33,11 +34,9 @@ import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static test_util.TestControllerUtil.expectStatus;
 import static test_util.TestControllerUtil.getResponseContentWithExpectedStatus;
-import static test_util.TestMessageUtil.createMessageWithSenderIdAndReceiverId;
-import static test_util.TestMessageUtil.createMessagesWithSenderIdAndReceiverId;
 import static test_util.constant.UrlConstant.*;
 
-@SpringBootTest(classes = MessageServiceApplication.class)
+@SpringBootTest(classes = {MessageServiceApplication.class, IntegrationTestMessageUtil.class})
 @ActiveProfiles("test")
 @ExtendWith(InstancioExtension.class)
 @AutoConfigureMockMvc
@@ -45,6 +44,9 @@ public class ChatControllerIntegrationTests implements AllServicesStarter {
 
     @MockBean
     private UserServiceClient userServiceClient;
+    @Autowired
+    private IntegrationTestMessageUtil testMessageUtil;
+    @Autowired
     @SpyBean
     private MessageRepository messageRepository;
     @Autowired
@@ -72,8 +74,7 @@ public class ChatControllerIntegrationTests implements AllServicesStarter {
             Long userId, Long friendId, UserDto sender, UserDto receiver
     ) throws Exception {
         mockUserServiceClientToReturnSenderAndReceiver(userId, friendId, sender, receiver);
-        List<Message> messages = createMessagesWithSenderIdAndReceiverId(userId, friendId);
-        messageRepository.saveAll(messages);
+        List<Message> messages = testMessageUtil.createMessagesWithSenderIdAndReceiverId(userId, friendId);
 
         String jsonResponse = requestChatAndExpectStatus(userId, friendId, 0, OK);
 
@@ -89,8 +90,7 @@ public class ChatControllerIntegrationTests implements AllServicesStarter {
             Long userId, Long friendId, UserDto sender, UserDto receiver
     ) throws Exception {
         mockUserServiceClientToReturnSenderAndReceiver(userId, friendId, sender, receiver);
-        Message message = createMessageWithSenderIdAndReceiverId(userId, friendId);
-        message = messageRepository.save(message);
+        Message message = testMessageUtil.createMessageWithSenderIdAndReceiverId(userId, friendId);
 
         String jsonResponse = requestMessageFromChatAndExpectStatus(userId, friendId, message.getMessageId(), OK);
 
@@ -105,8 +105,7 @@ public class ChatControllerIntegrationTests implements AllServicesStarter {
             Long userId, Long friendId, UserDto sender, UserDto receiver
     ) throws Exception {
         mockUserServiceClientToReturnSenderAndReceiver(userId, friendId, sender, receiver);
-        Message message = createMessageWithSenderIdAndReceiverId(userId, friendId);
-        message = messageRepository.save(message);
+        Message message = testMessageUtil.createMessageWithSenderIdAndReceiverId(userId, friendId);
 
         deleteMessageFromChatAndExpectStatus(userId, friendId, message.getMessageId(), OK);
 

@@ -20,10 +20,6 @@ public class JsonConverter {
     private JsonConverter() {
     }
 
-    public static <T> String toJson(T object) {
-        return gson.toJson(object);
-    }
-
     public static <T> T fromJson(String json, Class<T> type) {
         return gson.fromJson(json, type);
     }

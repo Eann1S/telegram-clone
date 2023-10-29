@@ -1,10 +1,10 @@
 package com.example.mapper;
 
-import com.example.client.UserServiceClient;
 import com.example.dto.MessageDto;
 import com.example.dto.UserDto;
 import com.example.dto.request.WriteMessageRequest;
 import com.example.entity.Message;
+import com.example.mapper.qualifier.user_id.UserByIdQualifier;
 import org.instancio.junit.InstancioExtension;
 import org.instancio.junit.InstancioSource;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,19 +22,19 @@ import static org.mockito.Mockito.when;
 class MessageMapperTests {
 
     @Mock
-    private UserServiceClient userServiceClient;
+    private UserByIdQualifier userByIdQualifier;
     private MessageMapper messageMapper;
 
     @BeforeEach
     void setUp() {
-        messageMapper = new MessageMapperImpl(userServiceClient);
+        messageMapper = new MessageMapperImpl(userByIdQualifier);
     }
 
     @ParameterizedTest
     @InstancioSource
     void shouldMapMessageToDto(Message message, UserDto sender, UserDto receiver) {
-        when(userServiceClient.getUserById(message.getSenderId())).thenReturn(sender);
-        when(userServiceClient.getUserById(message.getReceiverId())).thenReturn(receiver);
+        when(userByIdQualifier.getUserById(message.getSenderId())).thenReturn(sender);
+        when(userByIdQualifier.getUserById(message.getReceiverId())).thenReturn(receiver);
 
         MessageDto messageDto = messageMapper.mapMessageToDto(message);
 
@@ -46,8 +46,8 @@ class MessageMapperTests {
     @ParameterizedTest
     @InstancioSource
     void shouldMapMessagesToDtos(Message message, UserDto sender, UserDto receiver) {
-        when(userServiceClient.getUserById(message.getSenderId())).thenReturn(sender);
-        when(userServiceClient.getUserById(message.getReceiverId())).thenReturn(receiver);
+        when(userByIdQualifier.getUserById(message.getSenderId())).thenReturn(sender);
+        when(userByIdQualifier.getUserById(message.getReceiverId())).thenReturn(receiver);
         List<Message> messages = List.of(message);
 
         Iterable<MessageDto> messageDtos = messageMapper.mapMessagesToDtos(messages);

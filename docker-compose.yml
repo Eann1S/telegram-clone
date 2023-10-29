@@ -9,7 +9,7 @@ services:
       - 8089:8089
     environment:
       SERVER_PORT: 8089
-      DATABASE_URL: authentication-service-database:5432
+      DATABASE_URL: postgres:5432
       REDIS_HOST: redis
       REDIS_PORT: 6379
       KAFKA_URL: kafka:29092
@@ -45,7 +45,7 @@ services:
     restart: unless-stopped
     pull_policy: missing
     environment:
-      DATABASE_URL: user-service-database:7687
+      DATABASE_URL: neo4j:7687
       KAFKA_URL: kafka:29092
       DISCOVERY_SERVER_URL: discovery-server:8761
       CONFIG_SERVER_URL: config-server:8888
@@ -68,6 +68,24 @@ services:
       NEO4J_AUTH: none
     volumes:
       - neo4j-data:/data/neo4j
+
+  message-service:
+    container_name: message-service
+    image: eann1s/telegram-message-service:latest
+    hostname: message-service
+    restart: unless-stopped
+    pull_policy: missing
+    environment:
+      DATABASE_HOST: cassandra
+      DATABASE_PORT: 9042
+      DATABASE_USERNAME: cassandra
+      DATABASE_PASSWORD: cassandra
+      DISCOVERY_SERVER_URL: discovery-server:8761
+      CONFIG_SERVER_URL: config-server:8888
+    depends_on:
+      - config-server
+      - cassandra
+      - discovery-server
 
   cassandra:
     container_name: cassandra
@@ -93,6 +111,7 @@ services:
       CONFIG_SERVER_URL: config-server:8888
     depends_on:
       - discovery-server
+      - config-server
 
   config-server:
     container_name: config-server
