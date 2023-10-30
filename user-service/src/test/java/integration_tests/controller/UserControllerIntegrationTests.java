@@ -18,6 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -38,6 +39,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static test_util.TestControllerUtil.getResponseContentWithExpectedStatus;
 import static test_util.constant.UrlConstant.*;
 
+@DirtiesContext
 @SpringBootTest(classes = UserServiceApplication.class)
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
@@ -109,7 +111,7 @@ public class UserControllerIntegrationTests implements AllServicesStarter {
             String jsonResponse = updateUserByIdAndExpectStatus(user.getId(), request, OK);
 
             assertThat(jsonResponse).contains(USER_UPDATED.getMessage());
-            UserDto updatedUser = userService.getUserById(user.getId());
+            UserDto updatedUser = userService.getUserDtoById(user.getId());
             assertThat(updatedUser)
                     .extracting(UserDto::id, UserDto::email, UserDto::username)
                     .containsExactly(user.getId(), request.email(), request.username());

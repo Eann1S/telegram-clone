@@ -1,9 +1,7 @@
 package com.example.service.impl;
 
-import com.example.dto.request.WriteMessageRequest;
 import com.example.entity.Message;
 import com.example.exception.MessageNotFoundException;
-import com.example.mapper.MessageMapper;
 import com.example.repository.MessageRepository;
 import com.example.service.MessageService;
 import lombok.RequiredArgsConstructor;
@@ -19,16 +17,14 @@ import java.util.List;
 public class MessageServiceImpl implements MessageService {
 
     private final MessageRepository messageRepository;
-    private final MessageMapper messageMapper;
 
     @Override
-    public Message createMessageFromWriteMessageRequest(WriteMessageRequest writeMessageRequest) {
-        Message message = messageMapper.mapWriteMessageRequestToMessage(writeMessageRequest);
+    public Message saveMessageToDatabase(Message message) {
         return messageRepository.save(message);
     }
 
     @Override
-    public void deleteMessage(Message message) {
+    public void deleteMessageFromDatabase(Message message) {
         messageRepository.delete(message);
     }
 

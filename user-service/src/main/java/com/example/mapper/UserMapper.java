@@ -8,6 +8,7 @@ import com.example.entity.User;
 import org.mapstruct.*;
 
 import java.util.Collection;
+import java.util.List;
 
 @Mapper(
         componentModel = MappingConstants.ComponentModel.SPRING,
@@ -21,7 +22,7 @@ public interface UserMapper {
 
     User mapRegistrationDtoToUser(RegistrationDto registrationDto);
 
-    User updateUserFieldsFromUpdateRequest(@MappingTarget User userToUpdate, UpdateUserRequest updateRequest);
+    User updateUserFromUpdateRequest(@MappingTarget User userToUpdate, UpdateUserRequest updateRequest);
 
-    Collection<UserDto> mapUsersToDtos(Collection<User> users);
+    List<UserDto> mapUsersToDtos(Collection<User> users);
 }

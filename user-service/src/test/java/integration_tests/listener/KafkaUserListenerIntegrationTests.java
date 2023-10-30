@@ -1,4 +1,4 @@
-package integration_tests.service.listener;
+package integration_tests.listener;
 
 import com.example.UserServiceApplication;
 import com.example.config.kafka.KafkaTopicConfig;
@@ -10,8 +10,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import test_util.annotation.DisableDatabaseAutoConfiguration;
 import test_util.starter.ConfigServerStarter;
@@ -21,15 +22,16 @@ import static com.example.json.JsonConverter.toJson;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+@DirtiesContext
 @SpringBootTest(classes = UserServiceApplication.class)
 @ActiveProfiles("test")
-@ExtendWith(InstancioExtension.class)
 @DisableDatabaseAutoConfiguration
+@ExtendWith(InstancioExtension.class)
 public class KafkaUserListenerIntegrationTests implements ConfigServerStarter, KafkaStarter {
 
     @Autowired
     private KafkaTemplate<String, Object> kafkaTemplate;
-    @SpyBean
+    @MockBean
     private UserService userService;
     @Autowired
     private KafkaTopicConfig topicConfig;
@@ -39,10 +41,11 @@ public class KafkaUserListenerIntegrationTests implements ConfigServerStarter, K
     void shouldCreateUserFromRegistrationDto_whenDtoIsSent(RegistrationDto registrationDto) {
         sendMessage(topicConfig.getRegistrationTopic(), toJson(registrationDto));
 
-        verify(userService, timeout(5000)).createUserFrom(registrationDto);
+        verify(userService, timeout(5000)).createUserFromRegistrationDto(registrationDto);
     }
 
     private <T> void sendMessage(String topic, T message) {
         kafkaTemplate.send(topic, message);
     }
 }
+

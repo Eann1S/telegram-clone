@@ -1,4 +1,4 @@
-package com.example.service.messaging;
+package com.example.service;
 
 import com.example.dto.mq_dto.UpdateDto;
 

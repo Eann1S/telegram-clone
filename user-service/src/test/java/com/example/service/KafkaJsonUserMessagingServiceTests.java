@@ -1,7 +1,8 @@
-package com.example.service.messaging;
+package com.example.service;
 
 import com.example.config.kafka.KafkaTopicConfig;
 import com.example.dto.mq_dto.UpdateDto;
+import com.example.service.impl.KafkaJsonUserMessagingService;
 import org.instancio.junit.InstancioExtension;
 import org.instancio.junit.InstancioSource;
 import org.junit.jupiter.api.BeforeEach;

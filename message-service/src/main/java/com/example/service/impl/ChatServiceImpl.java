@@ -23,7 +23,8 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public MessageDto writeMessage(WriteMessageRequest writeMessageRequest) {
-        Message message = messageService.createMessageFromWriteMessageRequest(writeMessageRequest);
+        Message message = messageMapper.mapWriteMessageRequestToMessage(writeMessageRequest);
+        message = messageService.saveMessageToDatabase(message);
         log.info("In partition {{}:{}} message {} was created", message.getSenderId(), message.getReceiverId(), message.getMessageId());
         return messageMapper.mapMessageToDto(message);
     }
@@ -43,7 +44,7 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public void deleteMessageFromChat(Long userId, Long friendId, String messageId) {
         Message message = messageService.findMessageBySenderIdAndReceiverIdAndMessageIdInDatabase(userId, friendId, messageId);
-        messageService.deleteMessage(message);
+        messageService.deleteMessageFromDatabase(message);
         log.info("In partition {{}:{}} message {} was deleted", message.getSenderId(), message.getReceiverId(), message.getMessageId());
     }
 }

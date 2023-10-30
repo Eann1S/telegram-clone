@@ -1,9 +1,7 @@
 package com.example.service;
 
-import com.example.dto.request.WriteMessageRequest;
 import com.example.entity.Message;
 import com.example.exception.MessageNotFoundException;
-import com.example.mapper.MessageMapper;
 import com.example.repository.MessageRepository;
 import com.example.service.impl.MessageServiceImpl;
 import org.instancio.junit.InstancioExtension;
@@ -30,13 +28,11 @@ public class MessageServiceImplTests {
 
     @Mock
     private MessageRepository messageRepository;
-    @Mock
-    private MessageMapper messageMapper;
     private MessageService messageService;
 
     @BeforeEach
     void setUp() {
-        messageService = new MessageServiceImpl(messageRepository, messageMapper);
+        messageService = new MessageServiceImpl(messageRepository);
     }
 
     @Nested
@@ -44,21 +40,19 @@ public class MessageServiceImplTests {
 
         @ParameterizedTest
         @InstancioSource
-        void shouldCreateMessageFromWriteMessageRequest(WriteMessageRequest writeMessageRequest, Message message) {
-            when(messageMapper.mapWriteMessageRequestToMessage(writeMessageRequest))
-                    .thenReturn(message);
+        void shouldSaveMessageToDatabase(Message message) {
             when(messageRepository.save(message))
                     .thenReturn(message);
 
-            Message createdMessage = messageService.createMessageFromWriteMessageRequest(writeMessageRequest);
+            Message savedMessage = messageService.saveMessageToDatabase(message);
 
-            assertThat(createdMessage).isEqualTo(message);
+            assertThat(savedMessage).isEqualTo(message);
         }
 
         @ParameterizedTest
         @InstancioSource
-        void shouldDeleteMessage(Message message) {
-            messageService.deleteMessage(message);
+        void shouldDeleteMessageFromDatabase(Message message) {
+            messageService.deleteMessageFromDatabase(message);
 
             verify(messageRepository).delete(message);
         }

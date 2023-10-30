@@ -1,15 +1,18 @@
-package com.example.service.messaging;
+package com.example.service.impl;
 
 import com.example.config.kafka.KafkaTopicConfig;
 import com.example.dto.mq_dto.UpdateDto;
+import com.example.service.UserMessagingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import static com.example.json.JsonConverter.toJson;
 
 @Service
+@Qualifier("kafka")
 @RequiredArgsConstructor
 @Slf4j
 public class KafkaJsonUserMessagingService implements UserMessagingService {

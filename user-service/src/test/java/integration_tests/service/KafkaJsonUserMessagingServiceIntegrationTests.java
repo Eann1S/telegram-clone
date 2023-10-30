@@ -1,8 +1,8 @@
-package integration_tests.service.messaging;
+package integration_tests.service;
 
 import com.example.UserServiceApplication;
 import com.example.dto.mq_dto.UpdateDto;
-import com.example.service.messaging.KafkaJsonUserMessagingService;
+import com.example.service.impl.KafkaJsonUserMessagingService;
 import org.apache.commons.lang.StringUtils;
 import org.awaitility.Awaitility;
 import org.instancio.junit.InstancioExtension;
@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestComponent;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import test_util.annotation.DisableDatabaseAutoConfiguration;
 import test_util.starter.ConfigServerStarter;
@@ -23,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import static com.example.json.JsonConverter.fromJson;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@DirtiesContext
 @SpringBootTest(classes = {UserServiceApplication.class, KafkaJsonUserMessagingServiceIntegrationTests.TestKafkaListener.class})
 @ActiveProfiles("test")
 @ExtendWith(InstancioExtension.class)

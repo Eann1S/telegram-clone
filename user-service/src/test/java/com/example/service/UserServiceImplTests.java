@@ -8,7 +8,7 @@ import com.example.entity.User;
 import com.example.exception.UserNotFoundException;
 import com.example.mapper.UserMapper;
 import com.example.repository.UserRepository;
-import com.example.service.messaging.UserMessagingService;
+import com.example.service.impl.UserServiceImpl;
 import org.instancio.junit.InstancioExtension;
 import org.instancio.junit.InstancioSource;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, InstancioExtension.class})
-class UserServiceTests {
+class UserServiceImplTests {
 
     @Mock
     private UserRepository userRepository;
@@ -41,46 +41,46 @@ class UserServiceTests {
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, userMapper, userMessagingService);
+        userService = new UserServiceImpl(userRepository, userMapper, userMessagingService);
     }
 
     @Nested
     class SuccessCases {
         @ParameterizedTest
         @InstancioSource
-        void shouldReturnUserDtosForUsers_whenUsersExist(List<User> users, List<UserDto> userDtos) {
+        void shouldReturnUserDtos(List<User> users, List<UserDto> userDtos) {
             when(userRepository.findAll())
                     .thenReturn(users);
             when(userMapper.mapUsersToDtos(users))
                     .thenReturn(userDtos);
 
-            Collection<UserDto> actualUserDtos = userService.getAllUsers();
+            Collection<UserDto> actualUserDtos = userService.getAllUserDtos();
 
             assertThat(actualUserDtos).containsExactlyElementsOf(userDtos);
         }
 
         @ParameterizedTest
         @InstancioSource
-        void shouldReturnUserDtoById_whenUserExists(User user, UserDto userDto) {
+        void shouldReturnUserDtoById(User user, UserDto userDto) {
             when(userRepository.findById(user.getId()))
                     .thenReturn(Optional.of(user));
             when(userMapper.mapUserToDto(user))
                     .thenReturn(userDto);
 
-            UserDto actualUserDto = userService.getUserById(user.getId());
+            UserDto actualUserDto = userService.getUserDtoById(user.getId());
 
             assertThat(actualUserDto).isEqualTo(userDto);
         }
 
         @ParameterizedTest
         @InstancioSource
-        void shouldReturnUserDtoByEmail_whenUserExists(User user, UserDto userDto) {
+        void shouldReturnUserDtoByEmail(User user, UserDto userDto) {
             when(userRepository.findByEmail(user.getEmail()))
                     .thenReturn(Optional.of(user));
             when(userMapper.mapUserToDto(user))
                     .thenReturn(userDto);
 
-            UserDto actualUserDto = userService.getUserByEmail(user.getEmail());
+            UserDto actualUserDto = userService.getUserDtoByEmail(user.getEmail());
 
             assertThat(actualUserDto).isEqualTo(userDto);
         }
@@ -90,7 +90,7 @@ class UserServiceTests {
         void shouldUpdateUserById(User user, User updatedUser, UpdateDto updateDto, UpdateUserRequest request) {
             when(userRepository.findById(user.getId()))
                     .thenReturn(Optional.of(user));
-            when(userMapper.updateUserFieldsFromUpdateRequest(user, request))
+            when(userMapper.updateUserFromUpdateRequest(user, request))
                     .thenReturn(updatedUser);
             when(userMapper.mapUserToUpdateDto(updatedUser))
                     .thenReturn(updateDto);
@@ -102,7 +102,18 @@ class UserServiceTests {
 
         @ParameterizedTest
         @InstancioSource
-        void shouldFindUserByIdInDatabase_whenGivenValidId(User user) {
+        void shouldCreateUserFromRegistrationDto(User user, RegistrationDto registrationDto) {
+            when(userMapper.mapRegistrationDtoToUser(registrationDto))
+                    .thenReturn(user);
+
+            userService.createUserFromRegistrationDto(registrationDto);
+
+            verify(userRepository).save(user);
+        }
+
+        @ParameterizedTest
+        @InstancioSource
+        void shouldFindUserByIdInDatabase(User user) {
             when(userRepository.findById(user.getId()))
                     .thenReturn(Optional.of(user));
 
@@ -113,24 +124,13 @@ class UserServiceTests {
 
         @ParameterizedTest
         @InstancioSource
-        void shouldFindUserByEmailInDatabase_whenGivenValidEmail(User user) {
+        void shouldFindUserByEmailInDatabase(User user) {
             when(userRepository.findByEmail(user.getEmail()))
                     .thenReturn(Optional.of(user));
 
             User actualUser = userService.findUserByEmailInDatabase(user.getEmail());
 
             assertThat(actualUser).isEqualTo(user);
-        }
-
-        @ParameterizedTest
-        @InstancioSource
-        void shouldCreateUserFromRegistrationDto(User user, RegistrationDto registrationDto) {
-            when(userMapper.mapRegistrationDtoToUser(registrationDto))
-                    .thenReturn(user);
-
-            userService.createUserFrom(registrationDto);
-
-            verify(userRepository).save(user);
         }
     }
 
@@ -140,7 +140,7 @@ class UserServiceTests {
         @ParameterizedTest
         @InstancioSource
         void shouldThrowException_whenUserWithGivenIdDoesNotExist(Long id) {
-            assertThatThrownBy(() -> userService.getUserById(id))
+            assertThatThrownBy(() -> userService.getUserDtoById(id))
                     .isInstanceOf(UserNotFoundException.class)
                     .hasMessage(USER_NOT_FOUND.formatWith(id));
         }
@@ -148,7 +148,7 @@ class UserServiceTests {
         @ParameterizedTest
         @InstancioSource
         void shouldThrowException_whenUserWithGivenEmailDoesNotExist(String email) {
-            assertThatThrownBy(() -> userService.getUserByEmail(email))
+            assertThatThrownBy(() -> userService.getUserDtoByEmail(email))
                     .isInstanceOf(UserNotFoundException.class)
                     .hasMessage(USER_NOT_FOUND.formatWith(email));
         }

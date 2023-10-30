@@ -1,6 +1,5 @@
 package com.example.service;
 
-import com.example.dto.request.WriteMessageRequest;
 import com.example.entity.Message;
 import org.springframework.data.domain.Pageable;
 
@@ -8,9 +7,9 @@ import java.util.List;
 
 public interface MessageService {
 
-    Message createMessageFromWriteMessageRequest(WriteMessageRequest writeMessageRequest);
+    Message saveMessageToDatabase(Message message);
 
-    void deleteMessage(Message message);
+    void deleteMessageFromDatabase(Message message);
 
     List<Message> findMessagesBySenderIdAndReceiverIdInDatabase(Long senderId, Long receiverId, Pageable pageable);
 

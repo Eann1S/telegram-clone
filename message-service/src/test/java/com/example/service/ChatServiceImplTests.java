@@ -41,7 +41,9 @@ class ChatServiceImplTests {
         @ParameterizedTest
         @InstancioSource
         void shouldWriteMessage(Message message, WriteMessageRequest request, MessageDto messageDto) {
-            when(messageService.createMessageFromWriteMessageRequest(request))
+            when(messageMapper.mapWriteMessageRequestToMessage(request))
+                    .thenReturn(message);
+            when(messageService.saveMessageToDatabase(message))
                     .thenReturn(message);
             when(messageMapper.mapMessageToDto(message))
                     .thenReturn(messageDto);
@@ -85,7 +87,7 @@ class ChatServiceImplTests {
 
             chatService.deleteMessageFromChat(senderId, receiverId, messageId);
 
-            verify(messageService).deleteMessage(message);
+            verify(messageService).deleteMessageFromDatabase(message);
         }
     }
 }

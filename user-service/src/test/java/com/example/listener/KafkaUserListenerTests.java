@@ -1,4 +1,4 @@
-package com.example.service.listener;
+package com.example.listener;
 
 import com.example.dto.mq_dto.RegistrationDto;
 import com.example.service.UserService;
@@ -30,6 +30,6 @@ class KafkaUserListenerTests {
     void shouldCreateUserFromRegistrationDtoMessage(RegistrationDto registrationDto) {
         kafkaUserListener.createUserFromRegistrationDtoMessage(toJson(registrationDto));
 
-        verify(userService).createUserFrom(registrationDto);
+        verify(userService).createUserFromRegistrationDto(registrationDto);
     }
 }

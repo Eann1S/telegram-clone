@@ -48,7 +48,7 @@ class UserMapperTests {
     @ParameterizedTest
     @InstancioSource
     void shouldUpdateUserFromUpdateRequest(User user, UpdateUserRequest request) {
-        User updatedUser = userMapper.updateUserFieldsFromUpdateRequest(user, request);
+        User updatedUser = userMapper.updateUserFromUpdateRequest(user, request);
 
         assertThat(updatedUser)
                 .extracting(User::getId, User::getEmail, User::getUsername)
@@ -63,7 +63,9 @@ class UserMapperTests {
         Collection<UserDto> userDtos = userMapper.mapUsersToDtos(users);
 
         assertThat(userDtos)
-                .extracting(UserDto::id)
-                .containsExactly(user1.getId(), user2.getId());
+                .flatExtracting(UserDto::id, UserDto::email, UserDto::username)
+                .containsExactly(
+                        user1.getId(), user1.getEmail(), user1.getUsername(),
+                        user2.getId(), user2.getEmail(), user2.getUsername());
     }
 }
