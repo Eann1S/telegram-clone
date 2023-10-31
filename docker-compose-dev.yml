@@ -1,100 +1,4 @@
 services:
-  authentication-service:
-    container_name: authentication-service
-    image: eann1s/authentication-service:latest
-    hostname: authentication-service
-    restart: unless-stopped
-    pull_policy: missing
-    ports:
-      - 8089:8089
-    environment:
-      SERVER_PORT: 8089
-      DATABASE_URL: postgres:5432
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      KAFKA_URL: kafka:29092
-      DISCOVERY_SERVER_URL: discovery-server:8761
-      CONFIG_SERVER_URL: config-server:8888
-    depends_on:
-      - postgres
-      - discovery-server
-      - redis
-      - kafka
-
-  postgres:
-    container_name: postgres
-    image: postgres:alpine3.17
-    hostname: postgres
-    restart: unless-stopped
-    pull_policy: missing
-    ports:
-      - 5432:5432
-    environment:
-      POSTGRES_DB: authentication-service
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: root
-      PGDATA: /data/postgres
-    volumes:
-      - postgres-data:/data/postgres
-
-  user-service:
-    container_name: user-service
-    image: eann1s/telegram-user-service:latest
-    hostname: user-service
-    restart: unless-stopped
-    pull_policy: missing
-    environment:
-      DATABASE_URL: neo4j:7687
-      KAFKA_URL: kafka:29092
-      DISCOVERY_SERVER_URL: discovery-server:8761
-      CONFIG_SERVER_URL: config-server:8888
-    depends_on:
-      - neo4j
-      - discovery-server
-      - kafka
-
-  neo4j:
-    container_name: neo4j
-    image: neo4j:ubi8
-    hostname: neo4j
-    restart: unless-stopped
-    pull_policy: missing
-    ports:
-      - 7474:7474
-      - 7687:7687
-    environment:
-      NEO4J_AUTH: none
-    volumes:
-      - neo4j-data:/data/neo4j
-
-  message-service:
-    container_name: message-service
-    image: eann1s/telegram-message-service:latest
-    hostname: message-service
-    restart: unless-stopped
-    pull_policy: missing
-    environment:
-      DATABASE_HOST: cassandra
-      DATABASE_PORT: 9042
-      DATABASE_USERNAME: cassandra
-      DATABASE_PASSWORD: cassandra
-      DISCOVERY_SERVER_URL: discovery-server:8761
-      CONFIG_SERVER_URL: config-server:8888
-    depends_on:
-      - cassandra
-      - discovery-server
-
-  cassandra:
-    container_name: cassandra
-    image: cassandra:latest
-    hostname: cassandra
-    restart: unless-stopped
-    pull_policy: missing
-    ports:
-      - 9042:9042
-    volumes:
-      - cassandra-data:/data/cassandra
-
   api-gateway:
     container_name: api-gateway
     image: eann1s/telegram-api-gateway:latest
@@ -108,6 +12,7 @@ services:
       CONFIG_SERVER_URL: config-server:8888
     depends_on:
       - discovery-server
+      - config-server
 
   config-server:
     container_name: config-server
@@ -132,6 +37,102 @@ services:
     ports:
       - 8761:8761
 
+  authentication-service:
+    container_name: authentication-service
+    image: eann1s/authentication-service:latest
+    hostname: authentication-service
+    restart: unless-stopped
+    pull_policy: missing
+    ports:
+      - 8089:8089
+    environment:
+      SERVER_PORT: 8089
+      DATABASE_URL: postgres:5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_URL: kafka:29092
+      DISCOVERY_SERVER_URL: discovery-server:8761
+      CONFIG_SERVER_URL: config-server:8888
+    depends_on:
+      - postgres
+      - discovery-server
+      - redis
+      - kafka
+
+  user-service:
+    container_name: user-service
+    image: eann1s/telegram-user-service:latest
+    hostname: user-service
+    restart: unless-stopped
+    pull_policy: missing
+    environment:
+      DATABASE_URL: neo4j:7687
+      KAFKA_URL: kafka:29092
+      DISCOVERY_SERVER_URL: discovery-server:8761
+      CONFIG_SERVER_URL: config-server:8888
+    depends_on:
+      - neo4j
+      - discovery-server
+      - kafka
+
+  message-service:
+    container_name: message-service
+    image: eann1s/telegram-message-service:latest
+    hostname: message-service
+    restart: unless-stopped
+    pull_policy: missing
+    environment:
+      DATABASE_HOST: cassandra
+      DATABASE_PORT: 9042
+      DATABASE_USERNAME: cassandra
+      DATABASE_PASSWORD: cassandra
+      DISCOVERY_SERVER_URL: discovery-server:8761
+      CONFIG_SERVER_URL: config-server:8888
+    depends_on:
+      - cassandra
+      - discovery-server
+
+  postgres:
+    container_name: postgres
+    image: postgres:alpine3.17
+    hostname: postgres
+    restart: unless-stopped
+    pull_policy: missing
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: authentication-service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      PGDATA: /data/postgres
+    volumes:
+      - postgres-data:/data/postgres
+
+  neo4j:
+    container_name: neo4j
+    image: neo4j:ubi8
+    hostname: neo4j
+    restart: unless-stopped
+    pull_policy: missing
+    ports:
+      - 7474:7474
+      - 7687:7687
+    environment:
+      NEO4J_AUTH: none
+    volumes:
+      - neo4j-data:/data/neo4j
+
+  cassandra:
+    container_name: cassandra
+    image: cassandra:latest
+    hostname: cassandra
+    restart: unless-stopped
+    pull_policy: missing
+    ports:
+      - 9042:9042
+    volumes:
+      - cassandra-data:/data/cassandra
+
   redis:
     container_name: redis
     image: redis:7.2-rc-alpine3.18
@@ -140,17 +141,6 @@ services:
     pull_policy: missing
     ports:
       - 6379:6379
-
-  zookeeper:
-    container_name: zookeeper
-    image: confluentinc/cp-zookeeper:7.3.2
-    hostname: zookeeper
-    ports:
-      - 2181:2181
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_SERVER_ID: 1
-      ZOOKEEPER_TICK_TIME: 2000
 
   kafka:
     container_name: kafka
@@ -169,6 +159,17 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
     depends_on:
       - zookeeper
+
+  zookeeper:
+    container_name: zookeeper
+    image: confluentinc/cp-zookeeper:7.3.2
+    hostname: zookeeper
+    ports:
+      - 2181:2181
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_TICK_TIME: 2000
 
 volumes:
   postgres-data: { }

@@ -4,7 +4,7 @@ import lombok.Getter;
 
 public enum ErrorMessage {
 
-    USER_NOT_FOUND("User with %s does not exist");
+    USER_NOT_FOUND("User %s does not exist");
 
     @Getter
     private final String message;
