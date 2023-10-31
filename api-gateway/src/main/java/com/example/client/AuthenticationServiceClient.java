@@ -10,6 +10,6 @@ import reactor.core.publisher.Mono;
 @ReactiveFeignClient(name = "${services.authentication-service.name}")
 public interface AuthenticationServiceClient {
 
-    @GetMapping("/internal/account/id/{jwt}")
+    @GetMapping("/authorized-account/id/{jwt}")
     Mono<String> getIdOfAuthorizedAccount(@PathVariable String jwt);
 }
