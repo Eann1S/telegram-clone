@@ -1,11 +1,10 @@
 package com.example.dto;
 
 public record ErrorDto(
-        String errorMessage,
-        Long timestamp
+        String errorMessage
 ) {
 
-    public static ErrorDto of(String errorMessage, Long timestamp) {
-        return new ErrorDto(errorMessage, timestamp);
+    public static ErrorDto of(String errorMessage) {
+        return new ErrorDto(errorMessage);
     }
 }

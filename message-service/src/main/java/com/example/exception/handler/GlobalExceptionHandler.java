@@ -17,6 +17,6 @@ public class GlobalExceptionHandler {
     }
 
     private ErrorDto createErrorDto(Exception e) {
-        return ErrorDto.of(e.getMessage(), System.currentTimeMillis());
+        return ErrorDto.of(e.getMessage());
     }
 }

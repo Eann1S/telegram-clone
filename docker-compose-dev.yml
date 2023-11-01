@@ -65,7 +65,10 @@ services:
     hostname: user-service
     restart: unless-stopped
     pull_policy: missing
+    ports:
+      - 8081:8081
     environment:
+      SERVER_PORT: 8081
       DATABASE_URL: neo4j:7687
       KAFKA_URL: kafka:29092
       DISCOVERY_SERVER_URL: discovery-server:8761

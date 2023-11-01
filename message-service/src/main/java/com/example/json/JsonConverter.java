@@ -9,10 +9,10 @@ import java.time.LocalDateTime;
 
 public class JsonConverter {
 
-    private static final Gson gson;
+    private static final Gson GSON;
 
     static {
-        gson = new GsonBuilder()
+        GSON = new GsonBuilder()
                 .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter().nullSafe())
                 .create();
     }
@@ -21,10 +21,10 @@ public class JsonConverter {
     }
 
     public static <T> T fromJson(String json, Class<T> type) {
-        return gson.fromJson(json, type);
+        return GSON.fromJson(json, type);
     }
 
     public static <T> T fromJson(String json, TypeToken<T> typeToken) {
-        return gson.fromJson(json, typeToken);
+        return GSON.fromJson(json, typeToken);
     }
 }

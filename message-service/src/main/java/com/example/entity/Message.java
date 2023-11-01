@@ -1,6 +1,5 @@
 package com.example.entity;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,7 +16,6 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 @Table("message")
 @Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
 public class Message {
 
@@ -32,7 +30,19 @@ public class Message {
     @Column("sendTime")
     private LocalDateTime sendTime;
 
+    public Message(String messageId, Long senderId, Long receiverId, String text, LocalDateTime sendTime) {
+        this.messageId = messageId;
+        this.senderId = senderId;
+        this.receiverId = receiverId;
+        this.text = text;
+        this.sendTime = sendTime.truncatedTo(MINUTES);
+    }
+
     public LocalDateTime getSendTime() {
         return sendTime.truncatedTo(MINUTES);
+    }
+
+    public void setSendTime(LocalDateTime sendTime) {
+        this.sendTime = sendTime.truncatedTo(MINUTES);
     }
 }
