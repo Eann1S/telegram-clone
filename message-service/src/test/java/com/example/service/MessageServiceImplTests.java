@@ -13,6 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.SliceImpl;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +21,8 @@ import java.util.Optional;
 import static com.example.message.ErrorMessage.MESSAGE_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -59,11 +62,12 @@ public class MessageServiceImplTests {
 
         @ParameterizedTest
         @InstancioSource
-        void shouldFindMessagesBySenderAndReceiverIdInDatabase(List<Message> messages, Long senderId, Long receiverId, Pageable pageable) {
-            when(messageRepository.findBySenderIdAndReceiverId(senderId, receiverId, pageable))
-                    .thenReturn(messages);
+        void shouldFindMessagesBySenderAndReceiverIdInDatabase(List<Message> messages, Long senderId, Long receiverId) {
+            when(messageRepository.findBySenderIdAndReceiverId(eq(senderId), eq(receiverId), any(Pageable.class)))
+                    .thenReturn(new SliceImpl<>(messages));
 
-            Iterable<Message> messagesFromDb = messageService.findMessagesBySenderIdAndReceiverIdInDatabase(senderId, receiverId, pageable);
+            Iterable<Message> messagesFromDb = messageService.findMessagesBySenderIdAndReceiverIdInDatabase(
+                    senderId, receiverId, Pageable.ofSize(5));
 
             assertThat(messagesFromDb).containsExactlyInAnyOrderElementsOf(messages);
         }

@@ -7,8 +7,10 @@ import com.example.dto.UserDto;
 import com.example.entity.Message;
 import com.example.repository.MessageRepository;
 import com.google.gson.reflect.TypeToken;
+import org.instancio.Instancio;
 import org.instancio.junit.InstancioExtension;
 import org.instancio.junit.InstancioSource;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +25,12 @@ import org.springframework.test.web.servlet.ResultActions;
 import test_util.IntegrationTestMessageUtil;
 import test_util.starter.AllServicesStarter;
 
+import java.util.Comparator;
 import java.util.List;
 
 import static com.example.json.JsonConverter.fromJson;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.instancio.Select.root;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.CREATED;
@@ -54,12 +58,10 @@ public class ChatControllerIntegrationTests implements AllServicesStarter {
 
     @ParameterizedTest
     @InstancioSource
-    void shouldWriteMessage_whenGivenValidFriendId(
-            String text, Long userId, Long friendId, UserDto sender, UserDto receiver
-    ) throws Exception {
-        mockUserServiceClientToReturnSenderAndReceiver(userId, friendId, sender, receiver);
+    void shouldWriteMessage_whenGivenValidFriendId(String text, UserDto sender, UserDto receiver) throws Exception {
+        mockUserServiceClientToReturnSenderAndReceiver(sender, receiver);
 
-        String jsonResponse = writeMessageAndExpectStatus(text, userId, friendId, CREATED);
+        String jsonResponse = writeMessageAndExpectStatus(text, sender.id(), receiver.id(), CREATED);
 
         MessageDto messageDto = fromJson(jsonResponse, MessageDto.class);
         assertThat(messageDto)
@@ -70,29 +72,28 @@ public class ChatControllerIntegrationTests implements AllServicesStarter {
 
     @ParameterizedTest
     @InstancioSource
-    void shouldReturnChat_whenGivenValidFriendId(
-            Long userId, Long friendId, UserDto sender, UserDto receiver
-    ) throws Exception {
-        mockUserServiceClientToReturnSenderAndReceiver(userId, friendId, sender, receiver);
-        List<Message> messages = testMessageUtil.createMessagesWithSenderIdAndReceiverId(userId, friendId);
+    void shouldReturnChat_whenGivenValidFriendId(UserDto sender, UserDto receiver) throws Exception {
+        mockUserServiceClientToReturnSenderAndReceiver(sender, receiver);
+        int messagesSize = createMessagesSize();
+        testMessageUtil.createMessagesWithSenderIdAndReceiverId(sender.id(), receiver.id(), messagesSize);
 
-        String jsonResponse = requestChatAndExpectStatus(userId, friendId, 0, OK);
+        String jsonResponse = requestChatAndExpectStatus(sender.id(), receiver.id(), 0, messagesSize, OK);
 
         List<MessageDto> messageDtos = fromJson(jsonResponse, getTypeTokenForMessageDtos());
         assertThat(messageDtos)
+                .hasSize(messagesSize)
+                .isSortedAccordingTo(getDescMessageDtoComparator())
                 .flatExtracting(MessageDto::sender, MessageDto::receiver)
                 .containsOnly(sender, receiver);
     }
 
     @ParameterizedTest
     @InstancioSource
-    void shouldReturnMessageFromChat_whenGivenValidFriendIdAndMessageId(
-            Long userId, Long friendId, UserDto sender, UserDto receiver
-    ) throws Exception {
-        mockUserServiceClientToReturnSenderAndReceiver(userId, friendId, sender, receiver);
-        Message message = testMessageUtil.createMessageWithSenderIdAndReceiverId(userId, friendId);
+    void shouldReturnMessageFromChat_whenGivenValidFriendIdAndMessageId(UserDto sender, UserDto receiver) throws Exception {
+        mockUserServiceClientToReturnSenderAndReceiver(sender, receiver);
+        Message message = testMessageUtil.createMessageWithSenderIdAndReceiverId(sender.id(), receiver.id());
 
-        String jsonResponse = requestMessageFromChatAndExpectStatus(userId, friendId, message.getMessageId(), OK);
+        String jsonResponse = requestMessageFromChatAndExpectStatus(sender.id(), receiver.id(), message.getMessageId(), OK);
 
         MessageDto messageDto = fromJson(jsonResponse, MessageDto.class);
         assertThat(messageDto.messageId())
@@ -101,13 +102,11 @@ public class ChatControllerIntegrationTests implements AllServicesStarter {
 
     @ParameterizedTest
     @InstancioSource
-    void shouldDeleteMessageFromChat_whenGivenValidFriendIdAndMessageId(
-            Long userId, Long friendId, UserDto sender, UserDto receiver
-    ) throws Exception {
-        mockUserServiceClientToReturnSenderAndReceiver(userId, friendId, sender, receiver);
-        Message message = testMessageUtil.createMessageWithSenderIdAndReceiverId(userId, friendId);
+    void shouldDeleteMessageFromChat_whenGivenValidFriendIdAndMessageId(UserDto sender, UserDto receiver) throws Exception {
+        mockUserServiceClientToReturnSenderAndReceiver(sender, receiver);
+        Message message = testMessageUtil.createMessageWithSenderIdAndReceiverId(sender.id(), receiver.id());
 
-        deleteMessageFromChatAndExpectStatus(userId, friendId, message.getMessageId(), OK);
+        deleteMessageFromChatAndExpectStatus(sender.id(), receiver.id(), message.getMessageId(), OK);
 
         verify(messageRepository).delete(message);
     }
@@ -119,10 +118,11 @@ public class ChatControllerIntegrationTests implements AllServicesStarter {
         return getResponseContentWithExpectedStatus(resultActions, status);
     }
 
-    private String requestChatAndExpectStatus(Long userId, Long friendId, Integer page, HttpStatus status) throws Exception {
+    private String requestChatAndExpectStatus(Long userId, Long friendId, Integer page, Integer size, HttpStatus status) throws Exception {
         ResultActions resultActions = mockMvc.perform(get(GET_CHAT_URL, friendId)
                 .header("User-Id", userId)
-                .param("page", page.toString()));
+                .param("page", page.toString())
+                .param("size", size.toString()));
         return getResponseContentWithExpectedStatus(resultActions, status);
     }
 
@@ -138,9 +138,18 @@ public class ChatControllerIntegrationTests implements AllServicesStarter {
         expectStatus(resultActions, status);
     }
 
-    private void mockUserServiceClientToReturnSenderAndReceiver(Long senderId, Long receiverId, UserDto sender, UserDto receiver) {
-        when(userServiceClient.getUserById(senderId)).thenReturn(sender);
-        when(userServiceClient.getUserById(receiverId)).thenReturn(receiver);
+    private void mockUserServiceClientToReturnSenderAndReceiver( UserDto sender, UserDto receiver) {
+        when(userServiceClient.getUserById(sender.id())).thenReturn(sender);
+        when(userServiceClient.getUserById(receiver.id())).thenReturn(receiver);
+    }
+
+    private Integer createMessagesSize() {
+        return Instancio.of(Integer.class).generate(root(), gen -> gen.ints().max(20)).create();
+    }
+
+    @NotNull
+    private Comparator<MessageDto> getDescMessageDtoComparator() {
+        return (a, b) -> b.sendTime().compareTo(a.sendTime());
     }
 
     private TypeToken<List<MessageDto>> getTypeTokenForMessageDtos() {

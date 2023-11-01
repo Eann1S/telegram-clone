@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.TestComponent;
 import java.util.List;
 
 import static org.instancio.Select.field;
+import static org.instancio.Select.root;
 
 @TestComponent
 public class IntegrationTestMessageUtil {
@@ -24,8 +25,9 @@ public class IntegrationTestMessageUtil {
         return messageRepository.save(message);
     }
 
-    public List<Message> createMessagesWithSenderIdAndReceiverId(Long senderId, Long receiverId) {
+    public List<Message> createMessagesWithSenderIdAndReceiverId(Long senderId, Long receiverId, int size) {
         List<Message> messages = Instancio.ofList(Message.class)
+                .generate(root(), gen -> gen.collection().size(size))
                 .set(field(Message::getSenderId), senderId)
                 .set(field(Message::getReceiverId), receiverId)
                 .create();

@@ -5,6 +5,7 @@ import com.example.dto.request.WriteMessageRequest;
 import com.example.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,7 +38,7 @@ public class ChatController {
             @RequestParam(name = "page") Integer page,
             @RequestParam(name = "size", defaultValue = "10") Integer size
     ) {
-        PageRequest pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size);
         List<MessageDto> chat = chatService.getChat(userId, friendId, pageable);
         return ResponseEntity.ok(chat);
     }

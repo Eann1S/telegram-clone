@@ -3,6 +3,7 @@ package com.example.entity;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.data.cassandra.core.cql.Ordering;
 import org.springframework.data.cassandra.core.cql.PrimaryKeyType;
 import org.springframework.data.cassandra.core.mapping.Column;
@@ -17,17 +18,17 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 @Data
 @Builder
 @NoArgsConstructor
-public class Message {
+public class Message implements Comparable<Message> {
 
-    @PrimaryKeyColumn(name = "messageId", type = PrimaryKeyType.CLUSTERED, ordinal = 2, ordering = Ordering.DESCENDING)
+    @PrimaryKeyColumn(name = "message_id", type = PrimaryKeyType.CLUSTERED, ordinal = 2, ordering = Ordering.DESCENDING)
     private String messageId;
-    @PrimaryKeyColumn(name = "senderId", type = PrimaryKeyType.PARTITIONED, ordinal = 0)
+    @PrimaryKeyColumn(name = "sender_id", type = PrimaryKeyType.PARTITIONED, ordinal = 0)
     private Long senderId;
-    @PrimaryKeyColumn(name = "receiverId", type = PrimaryKeyType.PARTITIONED, ordinal = 1)
+    @PrimaryKeyColumn(name = "receiver_id", type = PrimaryKeyType.PARTITIONED, ordinal = 1)
     private Long receiverId;
     @Column("text")
     private String text;
-    @Column("sendTime")
+    @Column("send_time")
     private LocalDateTime sendTime;
 
     public Message(String messageId, Long senderId, Long receiverId, String text, LocalDateTime sendTime) {
@@ -44,5 +45,10 @@ public class Message {
 
     public void setSendTime(LocalDateTime sendTime) {
         this.sendTime = sendTime.truncatedTo(MINUTES);
+    }
+
+    @Override
+    public int compareTo(@NotNull Message o) {
+        return o.sendTime.compareTo(this.sendTime);
     }
 }

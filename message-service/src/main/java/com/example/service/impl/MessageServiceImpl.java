@@ -6,10 +6,16 @@ import com.example.repository.MessageRepository;
 import com.example.service.MessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.data.cassandra.core.query.CassandraPageRequest;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
+
+import static java.util.Comparator.naturalOrder;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +42,19 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public List<Message> findMessagesBySenderIdAndReceiverIdInDatabase(Long senderId, Long receiverId, Pageable pageable) {
-        return messageRepository.findBySenderIdAndReceiverId(senderId, receiverId, pageable);
+        PageRequest pageRequest = createPageRequestWithSortingFromPageable(pageable);
+        List<Message> messages = messageRepository.findBySenderIdAndReceiverId(senderId, receiverId, pageRequest).getContent();
+        return sortMessages(messages);
+    }
+
+    @NotNull
+    private List<Message> sortMessages(List<Message> messages) {
+        return messages.stream()
+                .sorted(naturalOrder())
+                .collect(Collectors.toList());
+    }
+
+    private PageRequest createPageRequestWithSortingFromPageable(Pageable pageable) {
+        return CassandraPageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
     }
 }

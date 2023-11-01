@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @RestControllerAdvice
@@ -14,6 +15,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MessageNotFoundException.class)
     public ResponseEntity<ErrorDto> handleNotFoundException(Exception e) {
         return new ResponseEntity<>(createErrorDto(e), NOT_FOUND);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorDto> handleException(Exception e) {
+        return new ResponseEntity<>(createErrorDto(e), INTERNAL_SERVER_ERROR);
     }
 
     private ErrorDto createErrorDto(Exception e) {
